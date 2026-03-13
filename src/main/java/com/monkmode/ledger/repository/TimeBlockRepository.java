@@ -47,4 +47,7 @@ public interface TimeBlockRepository extends JpaRepository<TimeBlock, Long> {
     List<TimeBlock> findBlocksByDay(@Param("userId") String userId,
                                     @Param("dayStart") LocalDateTime dayStart,
                                     @Param("dayEnd") LocalDateTime dayEnd);
+
+    @Query("SELECT DISTINCT t.category FROM TimeBlock t WHERE t.userId = :userId")
+    List<String> findDistinctCategories(@Param("userId") String userId);
 }

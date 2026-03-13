@@ -1,6 +1,5 @@
 package com.monkmode.ledger.service;
 
-import com.monkmode.ledger.enums.Category;
 import com.monkmode.ledger.exception.LedgerValidationException;
 import com.monkmode.ledger.model.TimeBlock;
 import com.monkmode.ledger.repository.TimeBlockRepository;
@@ -59,9 +58,10 @@ public class TimeBlockService {
 
             long duration = Duration.between(start, end).toMinutes();
 
-            if (block.getCategory() == Category.SLEEP) {
+            // FIX: Safe String comparison
+            if ("SLEEP".equalsIgnoreCase(block.getCategory())) {
                 totalSleepMinutes += duration;
-            } else if (block.getCategory() == Category.WASTED) {
+            } else if ("WASTED".equalsIgnoreCase(block.getCategory())) {
                 totalWastedMinutes += duration;
             }
         }
