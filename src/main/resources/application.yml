@@ -13,7 +13,7 @@ spring:
         default-context: db
 
   datasource:
-    url: jdbc:mysql://localhost:3306/time_ledger_db?useSSL=false&serverTimezone=UTC
+    url: jdbc:mysql://localhost:3306/time_ledger_db?useSSL=false&serverTimezone=Asia/Kolkata
     username: ${spring.datasource.username}
     password: ${spring.datasource.password}
     driver-class-name: com.mysql.cj.jdbc.Driver

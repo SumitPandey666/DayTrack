@@ -1,7 +1,6 @@
 package com.monkmode.ledger.model;
 
 import com.monkmode.ledger.enums.BlockStatus;
-import com.monkmode.ledger.enums.Category;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
@@ -22,9 +21,8 @@ public class TimeBlock {
     @Column(name = "user_id", nullable = false)
     private String userId;
 
-    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private Category category;
+    private String category;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Continuous Time Ledger</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <style>
+        body { background-color: #0f172a; color: #f8fafc; }
+    </style>
+</head>
+<body class="min-h-screen p-8">
+
+<div class="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+    <div class="lg:col-span-1 space-y-8">
+
+        <div class="bg-slate-800 px-6 py-6 rounded-xl border border-slate-700 text-center shadow-lg">
+            <p class="text-sm text-slate-400 uppercase tracking-wide font-semibold">Daily Efficiency</p>
+            <p class="text-5xl font-bold text-emerald-400 mt-2" th:text="${efficiencyScore + '%'}">100.0%</p>
+            <p class="text-xs text-slate-500 mt-2" th:text="${currentDate}">2026-03-13</p>
+        </div>
+
+        <section class="bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-lg">
+            <h2 class="text-lg font-semibold mb-2 text-white">Reality Adjustment</h2>
+            <p class="text-slate-400 text-xs mb-4">Shift all planned blocks down instantly.</p>
+
+            <form hx-post="/ui/blocks/shift" hx-target="#block-list" hx-swap="outerHTML" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1">Shift from Time</label>
+                    <input type="time" name="startTime" required class="w-full bg-slate-900 border border-slate-600 rounded-lg p-2 text-sm text-white focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1">Offset (Minutes)</label>
+                    <input type="number" name="offsetMinutes" value="60" required class="w-full bg-slate-900 border border-slate-600 rounded-lg p-2 text-sm text-white focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm rounded-lg px-4 py-2 transition-colors">
+                    Shift Schedule
+                </button>
+            </form>
+        </section>
+
+        <section class="bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-lg">
+            <h2 class="text-lg font-semibold mb-2 text-white">Nightly Orchestration</h2>
+            <p class="text-slate-400 text-xs mb-4">Insert blocks. The 24 hours must be accounted for.</p>
+
+            <form hx-post="/ui/blocks" hx-target="#block-list" hx-swap="outerHTML" class="space-y-4">
+
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1">Category</label>
+                    <input list="category-options" name="category" required placeholder="Select or type new..."
+                           class="w-full bg-slate-900 border border-slate-600 rounded-lg p-2 text-sm text-white focus:ring-blue-500">
+                    <datalist id="category-options">
+                        <option th:each="cat : ${categories}" th:value="${cat}"></option>
+                    </datalist>
+                </div>
+
+                <div class="grid grid-cols-3 gap-2">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-300 mb-1">Day</label>
+                        <select name="targetDate" class="w-full bg-slate-900 border border-slate-600 rounded-lg p-2 text-xs text-white">
+                            <option value="TODAY">Today</option>
+                            <option value="TOMORROW" selected>Tomorrow</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-300 mb-1">Start</label>
+                        <input type="time" name="startTime" required class="w-full bg-slate-900 border border-slate-600 rounded-lg p-2 text-xs text-white">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-300 mb-1">End</label>
+                        <input type="time" name="endTime" required class="w-full bg-slate-900 border border-slate-600 rounded-lg p-2 text-xs text-white">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1">Reason / Focus</label>
+                    <input type="text" name="reason" placeholder="e.g. Graph Algorithms" class="w-full bg-slate-900 border border-slate-600 rounded-lg p-2 text-sm text-white focus:ring-blue-500">
+                </div>
+
+                <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-sm rounded-lg px-4 py-2 transition-colors">
+                    Lock Block
+                </button>
+            </form>
+        </section>
+    </div>
+
+    <div class="lg:col-span-2">
+        <h2 class="text-2xl font-bold mb-6 text-white border-b border-slate-700 pb-2">Active Protocol</h2>
+
+        <div id="block-list" th:fragment="block-list-fragment" class="space-y-3">
+
+            <div th:if="${blocks.isEmpty()}" class="text-center p-8 border border-dashed border-slate-600 rounded-xl text-slate-500">
+                No blocks planned for today. Start the Nightly Orchestration.
+            </div>
+
+            <div th:each="block : ${blocks}" class="bg-slate-800 border-l-4 border-blue-500 p-4 rounded-r-xl shadow-lg flex justify-between items-center transition-all hover:bg-slate-700">
+                <div>
+                    <span class="text-xs font-bold text-blue-400 uppercase tracking-wider" th:text="${block.category}">DSA</span>
+                    <h3 class="font-medium text-lg text-white" th:text="${block.reason}">Graph Algorithms</h3>
+                    <p class="text-sm text-slate-400">
+                        <span th:text="${#temporals.format(block.plannedStart, 'hh:mm a')}">06:00 AM</span>
+                        -
+                        <span th:text="${#temporals.format(block.plannedEnd, 'hh:mm a')}">08:00 AM</span>
+                    </p>
+                </div>
+                <div>
+                    <span class="bg-slate-700 text-slate-300 text-xs font-semibold px-2.5 py-1 rounded shadow" th:text="${block.status}">PLANNED</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>
