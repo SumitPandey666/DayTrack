@@ -35,21 +35,20 @@ public class LedgerUIController {
     @PostMapping("/ui/blocks")
     public String createBlock(
             @RequestParam String category,
-            @RequestParam String targetDate, // "TODAY" or "TOMORROW"
-            @RequestParam String startTime,  // "09:00"
-            @RequestParam String endTime,    // "11:00"
+            @RequestParam String targetDate,
+            @RequestParam String startTime,
+            @RequestParam String endTime,
             @RequestParam String reason,
             Model model) {
 
         LocalDate date = targetDate.equals("TOMORROW") ? LocalDate.now().plusDays(1) : LocalDate.now();
 
-        // Stitch the date and the time together in the backend
         LocalDateTime plannedStart = LocalDateTime.of(date, LocalTime.parse(startTime));
         LocalDateTime plannedEnd = LocalDateTime.of(date, LocalTime.parse(endTime));
 
         TimeBlock block = TimeBlock.builder()
                 .userId(USER_ID)
-                .category(category.toUpperCase()) // Keep it clean and uniform
+                .category(category.toUpperCase())
                 .status(BlockStatus.PLANNED)
                 .plannedStart(plannedStart)
                 .plannedEnd(plannedEnd)
@@ -59,7 +58,10 @@ public class LedgerUIController {
         timeBlockService.createBlock(block);
 
         populateModel(model, date);
-        return "dashboard :: block-list-fragment";
+        // Add the success message to the model for the popup
+        model.addAttribute("toastMessage", "Block locked securely for " + targetDate.toLowerCase() + ".");
+
+        return "dashboard :: protocol-fragment";
     }
 
     // Endpoint to handle the Ripple Shift form
@@ -75,7 +77,7 @@ public class LedgerUIController {
         timeBlockService.applyRippleShift(USER_ID, shiftStart, offsetMinutes);
 
         populateModel(model, today);
-        return "dashboard :: block-list-fragment";
+        return "dashboard :: protocol-fragment";
     }
 
     private void populateModel(Model model, LocalDate date) {
@@ -100,5 +102,13 @@ public class LedgerUIController {
         model.addAttribute("categories", activeCategories);
         // Pass enum values to populate the dropdown
 
+    }
+
+    //New endpoint to fetch the table for ANY selected date
+    @GetMapping("/ui/protocol")
+    public String getProtocolForDate(@RequestParam("date") String dateString, Model model) {
+        LocalDate targetDate = LocalDate.parse(dateString);
+        populateModel(model, targetDate);
+        return "dashboard :: protocol-fragment";
     }
 }
