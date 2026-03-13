@@ -58,7 +58,7 @@ public class LedgerUIController {
 
         timeBlockService.createBlock(block);
 
-        populateModel(model, LocalDate.now());
+        populateModel(model, date);
         return "dashboard :: block-list-fragment";
     }
 
