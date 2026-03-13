@@ -38,11 +38,13 @@ public interface TimeBlockRepository extends JpaRepository<TimeBlock, Long> {
                                    @Param("end") LocalDateTime end);
 
     // Fetches all blocks for a specific day to calculate efficiency
+    // Fetches all blocks for a specific day to calculate efficiency AND sorts them chronologically
     @Query("""
             SELECT t FROM TimeBlock t 
             WHERE t.userId = :userId 
               AND t.plannedStart >= :dayStart 
               AND t.plannedStart < :dayEnd
+            ORDER BY t.plannedStart ASC
             """)
     List<TimeBlock> findBlocksByDay(@Param("userId") String userId,
                                     @Param("dayStart") LocalDateTime dayStart,
