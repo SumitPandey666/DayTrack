@@ -13,6 +13,8 @@
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
         ::-webkit-scrollbar-thumb:hover { background: #475569; }
+        /* Prevents Alpine elements from flickering on page load */
+        [x-cloak] { display: none !important; }
     </style>
 </head>
 <body class="h-screen overflow-hidden flex flex-col p-6 relative">
@@ -60,33 +62,47 @@
 
         <section class="bg-slate-800 p-5 rounded-xl border border-slate-700 shadow-lg shrink-0">
             <h2 class="text-md font-semibold mb-3 text-white">Nightly Orchestration</h2>
-            <form hx-post="/ui/blocks" hx-target="#protocol-container" hx-swap="outerHTML" class="space-y-3">
+            <form hx-post="/ui/blocks" hx-target="#protocol-container" hx-swap="outerHTML"
+                  class="space-y-3" x-data="{ daySelection: 'TOMORROW' }">
+
                 <div>
                     <label class="block text-[11px] font-medium text-slate-400 mb-1 uppercase tracking-wider">Category</label>
                     <input list="category-options" name="category" required placeholder="Select or type new..." class="w-full bg-slate-900 border border-slate-600 rounded-lg p-2 text-sm text-white focus:ring-blue-500">
                     <datalist id="category-options"><option th:each="cat : ${categories}" th:value="${cat}"></option></datalist>
                 </div>
-                <div class="grid grid-cols-3 gap-2">
+
+                <div class="grid grid-cols-2 gap-3">
                     <div>
                         <label class="block text-[11px] font-medium text-slate-400 mb-1 uppercase tracking-wider">Day</label>
-                        <select name="targetDate" class="w-full bg-slate-900 border border-slate-600 rounded-lg p-2 text-xs text-white">
+                        <select name="dayType" x-model="daySelection" class="w-full bg-slate-900 border border-slate-600 rounded-lg p-2 text-sm text-white">
                             <option value="TODAY">Today</option>
-                            <option value="TOMORROW" selected>Tomorrow</option>
+                            <option value="TOMORROW">Tomorrow</option>
+                            <option value="CUSTOM">Custom Date</option>
                         </select>
                     </div>
+                    <div x-show="daySelection === 'CUSTOM'" x-cloak>
+                        <label class="block text-[11px] font-medium text-slate-400 mb-1 uppercase tracking-wider">Select Date</label>
+                        <input type="date" name="customDate" x-bind:required="daySelection === 'CUSTOM'"
+                               class="w-full bg-slate-900 border border-slate-600 rounded-lg p-2 text-sm text-white">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
                     <div>
                         <label class="block text-[11px] font-medium text-slate-400 mb-1 uppercase tracking-wider">Start</label>
-                        <input type="time" name="startTime" required class="w-full bg-slate-900 border border-slate-600 rounded-lg p-2 text-xs text-white">
+                        <input type="time" name="startTime" required class="w-full bg-slate-900 border border-slate-600 rounded-lg p-2 text-sm text-white">
                     </div>
                     <div>
                         <label class="block text-[11px] font-medium text-slate-400 mb-1 uppercase tracking-wider">End</label>
-                        <input type="time" name="endTime" required class="w-full bg-slate-900 border border-slate-600 rounded-lg p-2 text-xs text-white">
+                        <input type="time" name="endTime" required class="w-full bg-slate-900 border border-slate-600 rounded-lg p-2 text-sm text-white">
                     </div>
                 </div>
+
                 <div>
                     <label class="block text-[11px] font-medium text-slate-400 mb-1 uppercase tracking-wider">Focus</label>
-                    <input type="text" name="reason" placeholder="e.g. Graph Traversal" class="w-full bg-slate-900 border border-slate-600 rounded-lg p-2 text-sm text-white focus:ring-blue-500">
+                    <input type="text" name="reason" placeholder="e.g. Tree Traversal" required class="w-full bg-slate-900 border border-slate-600 rounded-lg p-2 text-sm text-white focus:ring-blue-500">
                 </div>
+
                 <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-sm rounded-lg px-4 py-2 transition-colors">Lock Block</button>
             </form>
         </section>
@@ -96,22 +112,26 @@
 
         <div id="protocol-container" th:fragment="protocol-fragment" class="flex flex-col h-full">
 
-            <div id="toast-container" hx-swap-oob="true" class="fixed bottom-6 right-6 z-50 flex flex-col gap-2">
-                <div th:if="${toastMessage}"
-                     x-data="{ show: true }" x-init="setTimeout(() => show = false, 4000)" x-show="show"
-                     x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-2" x-transition:enter-end="opacity-100 translate-y-0"
-                     x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100 translate-y-0" x-transition:leave-end="opacity-0 translate-y-2"
-                     class="bg-emerald-600 text-white px-6 py-4 rounded-xl shadow-2xl flex items-center gap-3 border border-emerald-500">
-                    <svg class="w-5 h-5 text-emerald-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                    <span class="font-medium text-sm" th:text="${toastMessage}"></span>
-                </div>
-            </div>
+            <th:block th:if="${isHtmxRequest}">
 
-            <div id="efficiency-metric" hx-swap-oob="true" class="bg-slate-800 px-6 py-5 rounded-xl border border-slate-700 text-center shadow-lg shrink-0">
-                <p class="text-xs text-slate-400 uppercase tracking-wide font-semibold">Daily Efficiency</p>
-                <p class="text-4xl font-bold text-emerald-400 mt-1" th:text="${efficiencyScore + '%'}">100.0%</p>
-                <p class="text-xs text-slate-500 mt-1" th:text="${currentDate}">2026-03-14</p>
-            </div>
+                <div id="toast-container" hx-swap-oob="true" class="fixed bottom-6 right-6 z-50 flex flex-col gap-2">
+                    <div th:if="${toastMessage}"
+                         x-data="{ show: true }" x-init="setTimeout(() => show = false, 4000)" x-show="show"
+                         x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-2" x-transition:enter-end="opacity-100 translate-y-0"
+                         x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100 translate-y-0" x-transition:leave-end="opacity-0 translate-y-2"
+                         class="bg-emerald-600 text-white px-6 py-4 rounded-xl shadow-2xl flex items-center gap-3 border border-emerald-500">
+                        <svg class="w-5 h-5 text-emerald-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                        <span class="font-medium text-sm" th:text="${toastMessage}"></span>
+                    </div>
+                </div>
+
+                <div id="efficiency-metric" hx-swap-oob="true" class="bg-slate-800 px-6 py-5 rounded-xl border border-slate-700 text-center shadow-lg shrink-0">
+                    <p class="text-xs text-slate-400 uppercase tracking-wide font-semibold">Daily Efficiency</p>
+                    <p class="text-4xl font-bold text-emerald-400 mt-1" th:text="${efficiencyScore + '%'}">100.0%</p>
+                    <p class="text-xs text-slate-500 mt-1" th:text="${currentDate}">2026-03-14</p>
+                </div>
+
+            </th:block>
 
             <div class="bg-slate-900/80 border-b border-slate-700 shrink-0">
                 <table class="w-full text-left text-sm text-slate-300">
@@ -129,6 +149,7 @@
             <div class="flex-1 overflow-y-auto">
                 <table class="w-full text-left text-sm text-slate-300">
                     <tbody class="divide-y divide-slate-700/50">
+
                     <tr th:if="${blocks.isEmpty()}">
                         <td colspan="4" class="px-6 py-16 text-center text-slate-500">
                             <p class="text-base">No protocol established for this date.</p>
@@ -150,6 +171,7 @@
                             <span class="bg-slate-700/50 border border-slate-600 text-slate-300 text-[11px] font-semibold px-2 py-1 rounded shadow-sm" th:text="${block.status}"></span>
                         </td>
                     </tr>
+
                     </tbody>
                 </table>
             </div>

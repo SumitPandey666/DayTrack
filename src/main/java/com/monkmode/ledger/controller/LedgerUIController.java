@@ -4,6 +4,7 @@ import com.monkmode.ledger.enums.BlockStatus;
 import com.monkmode.ledger.model.TimeBlock;
 import com.monkmode.ledger.service.TimeBlockService;
 import com.monkmode.ledger.repository.TimeBlockRepository;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -21,7 +22,8 @@ import java.util.List;
 public class LedgerUIController {
 
     private final TimeBlockService timeBlockService;
-    private final TimeBlockRepository timeBlockRepository; // Injecting just to read the list quickly
+    private final TimeBlockRepository timeBlockRepository;
+    private final HttpServletRequest request; // Injected to check HTMX headers safely
     private final String USER_ID = "monk-user-001";
 
     @GetMapping("/")
@@ -35,13 +37,22 @@ public class LedgerUIController {
     @PostMapping("/ui/blocks")
     public String createBlock(
             @RequestParam String category,
-            @RequestParam String targetDate,
+            @RequestParam String dayType,
+            @RequestParam(required = false) String customDate, // Captures the exact date picker value
             @RequestParam String startTime,
             @RequestParam String endTime,
             @RequestParam String reason,
             Model model) {
 
-        LocalDate date = targetDate.equals("TOMORROW") ? LocalDate.now().plusDays(1) : LocalDate.now();
+        // Determine the exact target date based on the dropdown selection
+        LocalDate date;
+        if ("TODAY".equals(dayType)) {
+            date = LocalDate.now();
+        } else if ("TOMORROW".equals(dayType)) {
+            date = LocalDate.now().plusDays(1);
+        } else {
+            date = LocalDate.parse(customDate);
+        }
 
         LocalDateTime plannedStart = LocalDateTime.of(date, LocalTime.parse(startTime));
         LocalDateTime plannedEnd = LocalDateTime.of(date, LocalTime.parse(endTime));
@@ -58,8 +69,7 @@ public class LedgerUIController {
         timeBlockService.createBlock(block);
 
         populateModel(model, date);
-        // Add the success message to the model for the popup
-        model.addAttribute("toastMessage", "Block locked securely for " + targetDate.toLowerCase() + ".");
+        model.addAttribute("toastMessage", "Block securely locked for " + date.toString());
 
         return "dashboard :: protocol-fragment";
     }
@@ -80,6 +90,14 @@ public class LedgerUIController {
         return "dashboard :: protocol-fragment";
     }
 
+    // New endpoint to fetch the table for ANY selected date
+    @GetMapping("/ui/protocol")
+    public String getProtocolForDate(@RequestParam("date") String dateString, Model model) {
+        LocalDate targetDate = LocalDate.parse(dateString);
+        populateModel(model, targetDate);
+        return "dashboard :: protocol-fragment";
+    }
+
     private void populateModel(Model model, LocalDate date) {
         double efficiencyScore = timeBlockService.calculateDailyEfficiency(USER_ID, date);
         LocalDateTime startOfDay = date.atStartOfDay();
@@ -95,20 +113,13 @@ public class LedgerUIController {
             activeCategories = List.of("DEEP_WORK", "DSA", "PROJECT", "ERRAND", "WASTED", "REST", "SLEEP");
         }
 
-
         model.addAttribute("efficiencyScore", efficiencyScore);
         model.addAttribute("currentDate", date.toString());
         model.addAttribute("blocks", blocks);
         model.addAttribute("categories", activeCategories);
-        // Pass enum values to populate the dropdown
 
-    }
-
-    //New endpoint to fetch the table for ANY selected date
-    @GetMapping("/ui/protocol")
-    public String getProtocolForDate(@RequestParam("date") String dateString, Model model) {
-        LocalDate targetDate = LocalDate.parse(dateString);
-        populateModel(model, targetDate);
-        return "dashboard :: protocol-fragment";
+        // Tells Thymeleaf whether to render the OOB HTMX components or skip them on full page load
+        boolean isHtmxRequest = request.getHeader("HX-Request") != null;
+        model.addAttribute("isHtmxRequest", isHtmxRequest);
     }
 }
