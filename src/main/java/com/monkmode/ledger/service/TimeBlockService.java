@@ -1,5 +1,6 @@
 package com.monkmode.ledger.service;
 
+import com.monkmode.ledger.enums.BlockStatus;
 import com.monkmode.ledger.exception.LedgerValidationException;
 import com.monkmode.ledger.model.TimeBlock;
 import com.monkmode.ledger.repository.TimeBlockRepository;
@@ -19,13 +20,11 @@ public class TimeBlockService {
     private final TimeBlockRepository timeBlockRepository;
 
     public TimeBlock createBlock(TimeBlock block) {
-        // 1. Basic Sanity Check
         if (block.getPlannedEnd().isBefore(block.getPlannedStart()) ||
                 block.getPlannedEnd().isEqual(block.getPlannedStart())) {
             throw new LedgerValidationException("End time must be strictly after start time.");
         }
 
-        // 2. Overlap Check (The Rigid Base)
         boolean hasOverlap = timeBlockRepository.existsOverlappingBlock(
                 block.getUserId(), block.getPlannedStart(), block.getPlannedEnd());
 
@@ -41,7 +40,25 @@ public class TimeBlockService {
         return timeBlockRepository.shiftPlannedBlocks(userId, startTime, offsetMinutes);
     }
 
-    // The Dopamine Metric Generator
+    @Transactional
+    public TimeBlock updateBlockStatus(Long id, BlockStatus status) {
+        TimeBlock block = timeBlockRepository.findById(id)
+                .orElseThrow(() -> new LedgerValidationException("Block not found."));
+
+        block.setStatus(status);
+        return timeBlockRepository.save(block);
+    }
+
+    // NEW METHOD: Deletes a block and returns it to the controller
+    @Transactional
+    public TimeBlock deleteBlock(Long id) {
+        TimeBlock block = timeBlockRepository.findById(id)
+                .orElseThrow(() -> new LedgerValidationException("Block not found."));
+
+        timeBlockRepository.delete(block);
+        return block;
+    }
+
     public double calculateDailyEfficiency(String userId, LocalDate date) {
         LocalDateTime startOfDay = date.atStartOfDay();
         LocalDateTime endOfDay = startOfDay.plusDays(1);
@@ -52,28 +69,24 @@ public class TimeBlockService {
         long totalWastedMinutes = 0;
 
         for (TimeBlock block : dailyBlocks) {
-            // Use actual times if completed, otherwise fallback to planned times for real-time tracking
             LocalDateTime start = block.getActualStart() != null ? block.getActualStart() : block.getPlannedStart();
             LocalDateTime end = block.getActualEnd() != null ? block.getActualEnd() : block.getPlannedEnd();
 
             long duration = Duration.between(start, end).toMinutes();
 
-            // FIX: Safe String comparison
             if ("SLEEP".equalsIgnoreCase(block.getCategory())) {
                 totalSleepMinutes += duration;
-            } else if ("WASTED".equalsIgnoreCase(block.getCategory())) {
+            } else if ("WASTED".equalsIgnoreCase(block.getCategory()) || block.getStatus() == BlockStatus.WASTED) {
                 totalWastedMinutes += duration;
             }
         }
 
         long totalWakingMinutes = (24 * 60) - totalSleepMinutes;
 
-        // Prevent division by zero if your schedule is entirely empty or somehow all sleep
         if (totalWakingMinutes <= 0) return 0.0;
 
         double efficiency = (double) (totalWakingMinutes - totalWastedMinutes) / totalWakingMinutes;
 
-        // Return as a clean percentage rounded to 2 decimal places
         return Math.round((efficiency * 100) * 100.0) / 100.0;
     }
 }

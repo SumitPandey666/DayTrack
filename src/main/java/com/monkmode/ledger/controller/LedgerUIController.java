@@ -9,7 +9,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import java.time.LocalDate;
@@ -23,7 +25,7 @@ public class LedgerUIController {
 
     private final TimeBlockService timeBlockService;
     private final TimeBlockRepository timeBlockRepository;
-    private final HttpServletRequest request; // Injected to check HTMX headers safely
+    private final HttpServletRequest request;
     private final String USER_ID = "monk-user-001";
 
     @GetMapping("/")
@@ -33,18 +35,16 @@ public class LedgerUIController {
         return "dashboard";
     }
 
-    // Endpoint to handle the Nightly Orchestration form
     @PostMapping("/ui/blocks")
     public String createBlock(
             @RequestParam String category,
             @RequestParam String dayType,
-            @RequestParam(required = false) String customDate, // Captures the exact date picker value
+            @RequestParam(required = false) String customDate,
             @RequestParam String startTime,
             @RequestParam String endTime,
             @RequestParam String reason,
             Model model) {
 
-        // Determine the exact target date based on the dropdown selection
         LocalDate date;
         if ("TODAY".equals(dayType)) {
             date = LocalDate.now();
@@ -74,10 +74,9 @@ public class LedgerUIController {
         return "dashboard :: protocol-fragment";
     }
 
-    // Endpoint to handle the Ripple Shift form
     @PostMapping("/ui/blocks/shift")
     public String handleShift(
-            @RequestParam String startTime, // e.g., "09:00"
+            @RequestParam String startTime,
             @RequestParam int offsetMinutes,
             Model model) {
 
@@ -90,11 +89,38 @@ public class LedgerUIController {
         return "dashboard :: protocol-fragment";
     }
 
-    // New endpoint to fetch the table for ANY selected date
     @GetMapping("/ui/protocol")
     public String getProtocolForDate(@RequestParam("date") String dateString, Model model) {
         LocalDate targetDate = LocalDate.parse(dateString);
         populateModel(model, targetDate);
+        return "dashboard :: protocol-fragment";
+    }
+
+    @PostMapping("/ui/blocks/{id}/status")
+    public String updateBlockStatus(
+            @PathVariable Long id,
+            @RequestParam("status") String status,
+            Model model) {
+
+        TimeBlock updatedBlock = timeBlockService.updateBlockStatus(id, BlockStatus.valueOf(status));
+        LocalDate targetDate = updatedBlock.getPlannedStart().toLocalDate();
+
+        populateModel(model, targetDate);
+        model.addAttribute("toastMessage", "Protocol updated to " + status);
+
+        return "dashboard :: protocol-fragment";
+    }
+
+    // NEW ENDPOINT: Handles the delete button
+    @DeleteMapping("/ui/blocks/{id}")
+    public String deleteBlock(@PathVariable Long id, Model model) {
+
+        TimeBlock deletedBlock = timeBlockService.deleteBlock(id);
+        LocalDate targetDate = deletedBlock.getPlannedStart().toLocalDate();
+
+        populateModel(model, targetDate);
+        model.addAttribute("toastMessage", "Block permanently deleted.");
+
         return "dashboard :: protocol-fragment";
     }
 
@@ -104,11 +130,8 @@ public class LedgerUIController {
         LocalDateTime endOfDay = startOfDay.plusDays(1);
 
         List<TimeBlock> blocks = timeBlockRepository.findBlocksByDay(USER_ID, startOfDay, endOfDay);
-
-        // Inside populateModel(), fetch distinct strings instead of the Enum
         List<String> activeCategories = timeBlockRepository.findDistinctCategories(USER_ID);
 
-        // Fallback defaults if the database is completely empty
         if (activeCategories.isEmpty()) {
             activeCategories = List.of("DEEP_WORK", "DSA", "PROJECT", "ERRAND", "WASTED", "REST", "SLEEP");
         }
@@ -118,7 +141,6 @@ public class LedgerUIController {
         model.addAttribute("blocks", blocks);
         model.addAttribute("categories", activeCategories);
 
-        // Tells Thymeleaf whether to render the OOB HTMX components or skip them on full page load
         boolean isHtmxRequest = request.getHeader("HX-Request") != null;
         model.addAttribute("isHtmxRequest", isHtmxRequest);
     }
