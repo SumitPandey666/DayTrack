@@ -144,4 +144,23 @@ public class LedgerUIController {
         boolean isHtmxRequest = request.getHeader("HX-Request") != null;
         model.addAttribute("isHtmxRequest", isHtmxRequest);
     }
+
+    // NEW ENDPOINT: Handles Protocol Replication
+    @PostMapping("/ui/blocks/copy")
+    public String copyProtocol(
+            @RequestParam String sourceDate,
+            @RequestParam String targetDate,
+            Model model) {
+
+        LocalDate source = LocalDate.parse(sourceDate);
+        LocalDate target = LocalDate.parse(targetDate);
+
+        int copiedCount = timeBlockService.copyProtocol(USER_ID, source, target);
+
+        // Load the newly populated target date into the UI
+        populateModel(model, target);
+        model.addAttribute("toastMessage", "Successfully cloned " + copiedCount + " blocks to " + targetDate);
+
+        return "dashboard :: protocol-fragment";
+    }
 }

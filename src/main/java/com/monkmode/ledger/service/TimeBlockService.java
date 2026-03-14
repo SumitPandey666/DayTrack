@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 
 @Service
@@ -97,5 +98,46 @@ public class TimeBlockService {
 
         // Return as a clean percentage rounded to 2 decimal places
         return Math.round((efficiency * 100) * 100.0) / 100.0;
+    }
+
+    // NEW METHOD: The Protocol Replication Engine
+    @Transactional
+    public int copyProtocol(String userId, LocalDate sourceDate, LocalDate targetDate) {
+        LocalDateTime sourceStartOfDay = sourceDate.atStartOfDay();
+        LocalDateTime sourceEndOfDay = sourceStartOfDay.plusDays(1);
+
+        // Fetch all blocks from the source date
+        List<TimeBlock> sourceBlocks = timeBlockRepository.findBlocksByDay(userId, sourceStartOfDay, sourceEndOfDay);
+
+        if (sourceBlocks.isEmpty()) {
+            throw new LedgerValidationException("No protocol found on the source date to copy.");
+        }
+
+        int copiedCount = 0;
+        for (TimeBlock original : sourceBlocks) {
+            // Extract just the time (e.g., 05:00 AM)
+            LocalTime startTime = original.getPlannedStart().toLocalTime();
+            LocalTime endTime = original.getPlannedEnd().toLocalTime();
+
+            // Stitch it to the new target date
+            LocalDateTime newStart = LocalDateTime.of(targetDate, startTime);
+            LocalDateTime newEnd = LocalDateTime.of(targetDate, endTime);
+
+            // Build a fresh clone
+            TimeBlock newBlock = TimeBlock.builder()
+                    .userId(userId)
+                    .category(original.getCategory())
+                    .status(BlockStatus.PLANNED) // Strictly reset to PLANNED
+                    .plannedStart(newStart)
+                    .plannedEnd(newEnd)
+                    .reason(original.getReason())
+                    .build();
+
+            // Use our existing createBlock method so it still enforces overlap protections!
+            createBlock(newBlock);
+            copiedCount++;
+        }
+
+        return copiedCount;
     }
 }

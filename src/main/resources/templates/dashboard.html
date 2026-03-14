@@ -104,6 +104,22 @@
                 <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-sm rounded-lg px-4 py-2 transition-colors">Lock Block</button>
             </form>
         </section>
+        <section class="bg-slate-800 p-5 rounded-xl border border-slate-700 shadow-lg shrink-0">
+            <h2 class="text-md font-semibold mb-3 text-white">Protocol Replication</h2>
+            <form hx-post="/ui/blocks/copy" hx-target="#protocol-container" hx-swap="outerHTML" class="space-y-3">
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-[11px] font-medium text-slate-400 mb-1 uppercase tracking-wider">Copy From</label>
+                        <input type="date" name="sourceDate" th:value="${currentDate}" required class="w-full bg-slate-900 border border-slate-600 rounded-lg p-2 text-sm text-white focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-medium text-slate-400 mb-1 uppercase tracking-wider">Paste To</label>
+                        <input type="date" name="targetDate" th:value="${#temporals.format(#temporals.createNow().plusDays(1), 'yyyy-MM-dd')}" required class="w-full bg-slate-900 border border-slate-600 rounded-lg p-2 text-sm text-white focus:ring-blue-500">
+                    </div>
+                </div>
+                <button type="submit" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-medium text-sm rounded-lg px-4 py-2 transition-colors">Clone Protocol</button>
+            </form>
+        </section>
     </div>
 
     <div class="lg:col-span-8 flex flex-col bg-slate-800 rounded-xl border border-slate-700 shadow-lg overflow-hidden h-full">
