@@ -26,7 +26,6 @@ public class LedgerUIController {
     private final TimeBlockService timeBlockService;
     private final TimeBlockRepository timeBlockRepository;
     private final HttpServletRequest request;
-    private final String USER_ID = "monk-user-001";
 
     @GetMapping("/")
     public String getDashboard(Model model) {
@@ -58,7 +57,7 @@ public class LedgerUIController {
         LocalDateTime plannedEnd = LocalDateTime.of(date, LocalTime.parse(endTime));
 
         TimeBlock block = TimeBlock.builder()
-                .userId(USER_ID)
+                .userId(getUserId())
                 .category(category.toUpperCase())
                 .status(BlockStatus.PLANNED)
                 .plannedStart(plannedStart)
@@ -83,7 +82,7 @@ public class LedgerUIController {
         LocalDate today = LocalDate.now();
         LocalDateTime shiftStart = LocalDateTime.of(today, LocalTime.parse(startTime));
 
-        timeBlockService.applyRippleShift(USER_ID, shiftStart, offsetMinutes);
+        timeBlockService.applyRippleShift(getUserId(), shiftStart, offsetMinutes);
 
         populateModel(model, today);
         return "dashboard :: protocol-fragment";
@@ -132,7 +131,7 @@ public class LedgerUIController {
         LocalDate source = LocalDate.parse(sourceDate);
         LocalDate target = LocalDate.parse(targetDate);
 
-        int copiedCount = timeBlockService.copyProtocol(USER_ID, source, target);
+        int copiedCount = timeBlockService.copyProtocol(getUserId(), source, target);
 
         populateModel(model, target);
         model.addAttribute("toastMessage", "Successfully cloned " + copiedCount + " blocks to " + targetDate);
@@ -141,12 +140,12 @@ public class LedgerUIController {
     }
 
     private void populateModel(Model model, LocalDate date) {
-        double efficiencyScore = timeBlockService.calculateDailyEfficiency(USER_ID, date);
+        double efficiencyScore = timeBlockService.calculateDailyEfficiency(getUserId(), date);
         LocalDateTime startOfDay = date.atStartOfDay();
         LocalDateTime endOfDay = startOfDay.plusDays(1);
 
-        List<TimeBlock> blocks = timeBlockRepository.findBlocksByDay(USER_ID, startOfDay, endOfDay);
-        List<String> activeCategories = timeBlockRepository.findDistinctCategories(USER_ID);
+        List<TimeBlock> blocks = timeBlockRepository.findBlocksByDay(getUserId(), startOfDay, endOfDay);
+        List<String> activeCategories = timeBlockRepository.findDistinctCategories(getUserId());
 
         if (activeCategories.isEmpty()) {
             activeCategories = List.of("DEEP_WORK", "DSA", "PROJECT", "ERRAND", "WASTED", "REST", "SLEEP");
@@ -156,11 +155,17 @@ public class LedgerUIController {
         model.addAttribute("currentDate", date.toString());
         model.addAttribute("blocks", blocks);
         model.addAttribute("categories", activeCategories);
+        model.addAttribute("username", getUserId());
 
         boolean isHtmxRequest = request.getHeader("HX-Request") != null;
         model.addAttribute("isHtmxRequest", isHtmxRequest);
 
         // NEW: Check if the viewed date is in the past
         model.addAttribute("isPastDate", date.isBefore(LocalDate.now()));
+    }
+
+    // Helper to dynamically fetch the active user
+    private String getUserId() {
+        return (String) request.getSession().getAttribute("USER_ID");
     }
 }
