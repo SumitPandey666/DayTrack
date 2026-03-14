@@ -52,4 +52,16 @@ public interface TimeBlockRepository extends JpaRepository<TimeBlock, Long> {
 
     @Query("SELECT DISTINCT t.category FROM TimeBlock t WHERE t.userId = :userId")
     List<String> findDistinctCategories(@Param("userId") String userId);
+
+    // Fetches blocks over a date range for macro-analytics
+    @Query("""
+            SELECT t FROM TimeBlock t 
+            WHERE t.userId = :userId 
+              AND t.plannedStart >= :start 
+              AND t.plannedStart < :end
+            ORDER BY t.plannedStart ASC
+            """)
+    List<TimeBlock> findBlocksBetween(@Param("userId") String userId,
+                                      @Param("start") LocalDateTime start,
+                                      @Param("end") LocalDateTime end);
 }

@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>DayTrack OS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+    <style>
+        :root, [data-theme="monk"] {
+            --c-bg-900: #0f172a;   /* Base Background */
+            --c-bg-800: #1e293b;   /* Panels */
+            --c-bg-700: #334155;   /* Borders / Hover */
+            --c-bg-600: #475569;   /* Inputs */
+            --c-text-500: #64748b; /* Muted */
+            --c-text-400: #94a3b8; /* Labels */
+            --c-text-300: #cbd5e1; /* Main Text */
+            --c-text-200: #e2e8f0; /* Bright Text */
+
+            --c-accent-400: #60a5fa; /* Buttons Hover */
+            --c-accent-500: #3b82f6; /* Main Accent */
+            --c-accent-600: #2563eb; /* Buttons */
+            --c-accent-700: #1d4ed8;
+        }
+
+        [data-theme="ceo"] {
+            --c-bg-900: #000000;
+            --c-bg-800: #111111;
+            --c-bg-700: #262626;
+            --c-bg-600: #404040;
+            --c-text-500: #737373;
+            --c-text-400: #a3a3a3;
+            --c-text-300: #d4d4d4;
+            --c-text-200: #f5f5f5;
+
+            --c-accent-400: #fbbf24; /* Amber */
+            --c-accent-500: #f59e0b;
+            --c-accent-600: #d97706;
+            --c-accent-700: #b45309;
+        }
+
+        [data-theme="cyberpunk"] {
+            --c-bg-900: #0f0019; /* Deep Purple */
+            --c-bg-800: #1a0029;
+            --c-bg-700: #33004c;
+            --c-bg-600: #4c0073;
+            --c-text-500: #a855f7;
+            --c-text-400: #c084fc;
+            --c-text-300: #e9d5ff;
+            --c-text-200: #f3e8ff;
+
+            --c-accent-400: #22d3ee; /* Neon Cyan */
+            --c-accent-500: #06b6d4;
+            --c-accent-600: #0891b2;
+            --c-accent-700: #0e7490;
+        }
+
+        [data-theme="hacker"] {
+            --c-bg-900: #000000;
+            --c-bg-800: #050505;
+            --c-bg-700: #111111;
+            --c-bg-600: #222222;
+            --c-text-500: #166534;
+            --c-text-400: #22c55e;
+            --c-text-300: #4ade80; /* Neon Green Text */
+            --c-text-200: #86efac;
+
+            --c-accent-400: #4ade80; /* Neon Green */
+            --c-accent-500: #22c55e;
+            --c-accent-600: #16a34a;
+            --c-accent-700: #15803d;
+        }
+
+        [data-theme="ocean"] {
+            --c-bg-900: #082f49; /* Deep Navy */
+            --c-bg-800: #0c4a6e;
+            --c-bg-700: #075985;
+            --c-bg-600: #0369a1;
+            --c-text-500: #7dd3fc;
+            --c-text-400: #bae6fd;
+            --c-text-300: #e0f2fe;
+            --c-text-200: #f0f9ff;
+
+            --c-accent-400: #fb7185; /* Coral/Rose */
+            --c-accent-500: #f43f5e;
+            --c-accent-600: #e11d48;
+            --c-accent-700: #be123c;
+        }
+
+        body {
+            background-color: var(--c-bg-900);
+            color: #f8fafc;
+            transition: background-color 0.4s ease;
+        }
+
+        /* Smooth transitions for all panels */
+        .bg-slate-800, .bg-slate-900, .border-slate-700, .border-slate-600, .text-slate-400, .text-slate-300 {
+            transition: all 0.4s ease;
+        }
+
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--c-bg-700); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--c-bg-600); }
+        [x-cloak] { display: none !important; }
+    </style>
+
+    <script>
+        document.documentElement.setAttribute('data-theme', localStorage.getItem('daytrack-theme') || 'monk');
+    </script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        slate: {
+                            900: 'var(--c-bg-900)',
+                            800: 'var(--c-bg-800)',
+                            700: 'var(--c-bg-700)',
+                            600: 'var(--c-bg-600)',
+                            500: 'var(--c-text-500)',
+                            400: 'var(--c-text-400)',
+                            300: 'var(--c-text-300)',
+                            200: 'var(--c-text-200)',
+                        },
+                        blue: {
+                            400: 'var(--c-accent-400)',
+                            500: 'var(--c-accent-500)',
+                            600: 'var(--c-accent-600)',
+                            700: 'var(--c-accent-700)',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="min-h-screen p-8">
+
+<div class="max-w-4xl mx-auto">
+
+    <header class="flex justify-between items-center mb-10 border-b border-slate-700 pb-6">
+        <div>
+            <h1 class="text-3xl font-bold tracking-tight text-white">System Analytics</h1>
+            <p class="text-sm text-slate-400 mt-1">Macro-level execution metrics.</p>
+        </div>
+        <a href="/" class="text-sm font-medium text-slate-300 hover:text-white transition-colors flex items-center gap-2 bg-slate-800 border border-slate-600 px-4 py-2 rounded-lg">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+            Back to Ledger
+        </a>
+    </header>
+
+    <div x-data="{ activeTab: null }">
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+
+            <div @click="activeTab = activeTab === 'weekly' ? null : 'weekly'"
+                 class="bg-slate-800 p-8 rounded-xl border shadow-lg flex flex-col items-center justify-center cursor-pointer transition-all duration-200 hover:bg-slate-700 hover:-translate-y-1 relative"
+                 :class="activeTab === 'weekly' ? 'border-blue-500 ring-1 ring-blue-500/50' : 'border-slate-700'">
+
+                <div class="absolute top-4 right-4 text-slate-500">
+                    <svg class="w-5 h-5 transition-transform" :class="activeTab === 'weekly' ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                </div>
+
+                <h2 class="text-sm font-semibold text-slate-400 uppercase tracking-widest mb-2">Weekly Efficiency</h2>
+                <div class="text-6xl font-black" th:classappend="${weeklyEfficiency >= 80 ? 'text-emerald-400' : (weeklyEfficiency >= 50 ? 'text-yellow-400' : 'text-red-400')}">
+                    <span th:text="${weeklyEfficiency + '%'}"></span>
+                </div>
+            </div>
+
+            <div @click="activeTab = activeTab === 'monthly' ? null : 'monthly'"
+                 class="bg-slate-800 p-8 rounded-xl border shadow-lg flex flex-col items-center justify-center cursor-pointer transition-all duration-200 hover:bg-slate-700 hover:-translate-y-1 relative"
+                 :class="activeTab === 'monthly' ? 'border-blue-500 ring-1 ring-blue-500/50' : 'border-slate-700'">
+
+                <div class="absolute top-4 right-4 text-slate-500">
+                    <svg class="w-5 h-5 transition-transform" :class="activeTab === 'monthly' ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                </div>
+
+                <h2 class="text-sm font-semibold text-slate-400 uppercase tracking-widest mb-2">Monthly Efficiency</h2>
+                <div class="text-6xl font-black" th:classappend="${monthlyEfficiency >= 80 ? 'text-emerald-400' : (monthlyEfficiency >= 50 ? 'text-yellow-400' : 'text-red-400')}">
+                    <span th:text="${monthlyEfficiency + '%'}"></span>
+                </div>
+            </div>
+        </div>
+
+        <div x-show="activeTab === 'weekly'" x-transition x-cloak class="bg-slate-800 rounded-xl border border-slate-700 p-6 mb-8 shadow-lg">
+            <h3 class="text-lg font-bold text-white mb-4 border-b border-slate-700 pb-2">Last 5 Weeks</h3>
+            <div class="space-y-2">
+                <div th:each="trend, iterStat : ${weeklyTrend}" class="flex justify-between items-center p-3 hover:bg-slate-700/50 rounded-lg transition-colors">
+                        <span class="text-slate-300 font-medium flex items-center gap-3">
+                            <span th:if="${iterStat.index == 0}" class="bg-blue-900/40 text-blue-400 text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider">Current</span>
+                            <span th:text="${trend.period}">Mar 02 - Mar 08</span>
+                        </span>
+                    <span class="font-bold" th:text="${trend.efficiency + '%'}"
+                          th:classappend="${trend.efficiency >= 80 ? 'text-emerald-400' : (trend.efficiency >= 50 ? 'text-yellow-400' : 'text-red-400')}">
+                        </span>
+                </div>
+            </div>
+        </div>
+
+        <div x-show="activeTab === 'monthly'" x-transition x-cloak class="bg-slate-800 rounded-xl border border-slate-700 p-6 mb-8 shadow-lg">
+            <h3 class="text-lg font-bold text-white mb-4 border-b border-slate-700 pb-2">Last 6 Months</h3>
+            <div class="space-y-2">
+                <div th:each="trend, iterStat : ${monthlyTrend}" class="flex justify-between items-center p-3 hover:bg-slate-700/50 rounded-lg transition-colors">
+                        <span class="text-slate-300 font-medium flex items-center gap-3">
+                            <span th:if="${iterStat.index == 0}" class="bg-blue-900/40 text-blue-400 text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider">Current</span>
+                            <span th:text="${trend.period}">March 2026</span>
+                        </span>
+                    <span class="font-bold" th:text="${trend.efficiency + '%'}"
+                          th:classappend="${trend.efficiency >= 80 ? 'text-emerald-400' : (trend.efficiency >= 50 ? 'text-yellow-400' : 'text-red-400')}">
+                        </span>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="bg-gradient-to-br from-emerald-900/40 to-slate-800 p-6 rounded-xl border border-emerald-500/30 shadow-lg relative overflow-hidden">
+            <div class="absolute top-0 right-0 p-4 opacity-20">
+                <svg class="w-24 h-24 text-emerald-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.381z" clip-rule="evenodd"></path></svg>
+            </div>
+            <h2 class="text-lg font-bold text-emerald-400 mb-1 relative z-10">Golden Zone</h2>
+            <p class="text-xs text-slate-400 mb-4 relative z-10">Your most productive 3-hour stretch based on completion volume.</p>
+            <p class="text-3xl font-black text-white relative z-10" th:text="${goldenZone}"></p>
+        </div>
+
+        <div class="bg-gradient-to-br from-red-900/40 to-slate-800 p-6 rounded-xl border border-red-500/30 shadow-lg relative overflow-hidden">
+            <div class="absolute top-0 right-0 p-4 opacity-20">
+                <svg class="w-24 h-24 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            </div>
+            <h2 class="text-lg font-bold text-red-400 mb-1 relative z-10">Danger Zone</h2>
+            <p class="text-xs text-slate-400 mb-4 relative z-10">The 3-hour window where the most time is leaked or wasted.</p>
+            <p class="text-3xl font-black text-white relative z-10" th:text="${dangerZone}"></p>
+        </div>
+    </div>
+
+</div>
+</body>
+</html>
