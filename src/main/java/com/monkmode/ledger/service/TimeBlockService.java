@@ -65,28 +65,37 @@ public class TimeBlockService {
 
         List<TimeBlock> dailyBlocks = timeBlockRepository.findBlocksByDay(userId, startOfDay, endOfDay);
 
-        long totalSleepMinutes = 0;
-        long totalWastedMinutes = 0;
+        long totalWakingMinutes = 0;
+        long totalCompletedMinutes = 0;
 
         for (TimeBlock block : dailyBlocks) {
+            // Use actual times if executed, otherwise fallback to planned times
             LocalDateTime start = block.getActualStart() != null ? block.getActualStart() : block.getPlannedStart();
             LocalDateTime end = block.getActualEnd() != null ? block.getActualEnd() : block.getPlannedEnd();
 
             long duration = Duration.between(start, end).toMinutes();
 
+            // 1. Sleep doesn't count toward or against your waking efficiency
             if ("SLEEP".equalsIgnoreCase(block.getCategory())) {
-                totalSleepMinutes += duration;
-            } else if ("WASTED".equalsIgnoreCase(block.getCategory()) || block.getStatus() == BlockStatus.WASTED) {
-                totalWastedMinutes += duration;
+                continue;
+            }
+
+            // 2. Every waking block you've logged adds to the total potential of the day
+            totalWakingMinutes += duration;
+
+            // 3. You only get points if you actually executed and completed it
+            if (block.getStatus() == BlockStatus.COMPLETED) {
+                totalCompletedMinutes += duration;
             }
         }
 
-        long totalWakingMinutes = (24 * 60) - totalSleepMinutes;
+        // Prevent division by zero if the day is completely empty
+        if (totalWakingMinutes == 0) return 0.0;
 
-        if (totalWakingMinutes <= 0) return 0.0;
+        // Calculate the progress
+        double efficiency = (double) totalCompletedMinutes / totalWakingMinutes;
 
-        double efficiency = (double) (totalWakingMinutes - totalWastedMinutes) / totalWakingMinutes;
-
+        // Return as a clean percentage rounded to 2 decimal places
         return Math.round((efficiency * 100) * 100.0) / 100.0;
     }
 }
