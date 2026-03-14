@@ -38,7 +38,10 @@
         <div id="efficiency-metric" class="bg-slate-800 px-6 py-5 rounded-xl border border-slate-700 text-center shadow-lg shrink-0">
             <p class="text-xs text-slate-400 uppercase tracking-wide font-semibold">Daily Efficiency</p>
             <p class="text-4xl font-bold text-emerald-400 mt-1" th:text="${efficiencyScore + '%'}">100.0%</p>
-            <p class="text-xs text-slate-500 mt-1" th:text="${currentDate}">2026-03-14</p>
+            <p class="text-xs text-slate-500 mt-1 flex items-center justify-center gap-2">
+                <span th:text="${currentDate}">2026-03-14</span>
+                <span th:if="${isPastDate}" class="text-[10px] font-bold text-red-500 bg-red-900/30 px-2 py-0.5 rounded uppercase tracking-wider border border-red-500/30">🔒 Locked</span>
+            </p>
         </div>
 
         <section class="bg-slate-800 p-5 rounded-xl border border-slate-700 shadow-lg shrink-0">
@@ -104,6 +107,7 @@
                 <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-sm rounded-lg px-4 py-2 transition-colors">Lock Block</button>
             </form>
         </section>
+
         <section class="bg-slate-800 p-5 rounded-xl border border-slate-700 shadow-lg shrink-0">
             <h2 class="text-md font-semibold mb-3 text-white">Protocol Replication</h2>
             <form hx-post="/ui/blocks/copy" hx-target="#protocol-container" hx-swap="outerHTML" class="space-y-3">
@@ -141,7 +145,10 @@
                 <div id="efficiency-metric" hx-swap-oob="true" class="bg-slate-800 px-6 py-5 rounded-xl border border-slate-700 text-center shadow-lg shrink-0">
                     <p class="text-xs text-slate-400 uppercase tracking-wide font-semibold">Daily Efficiency</p>
                     <p class="text-4xl font-bold text-emerald-400 mt-1" th:text="${efficiencyScore + '%'}">100.0%</p>
-                    <p class="text-xs text-slate-500 mt-1" th:text="${currentDate}">2026-03-14</p>
+                    <p class="text-xs text-slate-500 mt-1 flex items-center justify-center gap-2">
+                        <span th:text="${currentDate}">2026-03-14</span>
+                        <span th:if="${isPastDate}" class="text-[10px] font-bold text-red-500 bg-red-900/30 px-2 py-0.5 rounded uppercase tracking-wider border border-red-500/30">🔒 Locked</span>
+                    </p>
                 </div>
             </th:block>
 
@@ -183,15 +190,17 @@
                         <td class="px-6 py-4 w-1/6">
                             <div class="flex justify-end items-center gap-3">
                                 <select name="status"
+                                        th:disabled="${isPastDate}"
                                         th:attr="hx-post=@{/ui/blocks/{id}/status(id=${block.id})}"
                                         hx-trigger="change"
                                         hx-target="#protocol-container"
                                         hx-swap="outerHTML"
-                                        class="bg-slate-700/50 border border-slate-600 text-[11px] font-semibold px-2 py-1 rounded shadow-sm focus:ring-blue-500 cursor-pointer appearance-none text-center outline-none transition-colors"
+                                        class="bg-slate-700/50 border border-slate-600 text-[11px] font-semibold px-2 py-1 rounded shadow-sm focus:ring-blue-500 appearance-none text-center outline-none transition-colors"
                                         th:classappend="${
-                                            block.status.name() == 'COMPLETED' ? 'text-emerald-400 border-emerald-500/50 bg-emerald-900/20' :
+                                            (isPastDate ? 'cursor-not-allowed opacity-60 ' : 'cursor-pointer ') +
+                                            (block.status.name() == 'COMPLETED' ? 'text-emerald-400 border-emerald-500/50 bg-emerald-900/20' :
                                             (block.status.name() == 'WASTED' ? 'text-red-400 border-red-500/50 bg-red-900/20' :
-                                            'text-slate-300')
+                                            'text-slate-300'))
                                         }">
                                     <option value="PLANNED" th:selected="${block.status.name() == 'PLANNED'}">PLANNED</option>
                                     <option value="COMPLETED" th:selected="${block.status.name() == 'COMPLETED'}">COMPLETED</option>
@@ -199,7 +208,8 @@
                                     <option value="WASTED" th:selected="${block.status.name() == 'WASTED'}">WASTED</option>
                                 </select>
 
-                                <button th:attr="hx-delete=@{/ui/blocks/{id}(id=${block.id})}"
+                                <button th:if="${!isPastDate}"
+                                        th:attr="hx-delete=@{/ui/blocks/{id}(id=${block.id})}"
                                         hx-confirm="Are you sure you want to delete this time block?"
                                         hx-target="#protocol-container"
                                         hx-swap="outerHTML"

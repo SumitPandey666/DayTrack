@@ -20,7 +20,16 @@ public class TimeBlockService {
 
     private final TimeBlockRepository timeBlockRepository;
 
+    // THE GUARDRAIL: Throws an exception if you try to touch yesterday
+    private void enforceNotPast(LocalDate date) {
+        if (date.isBefore(LocalDate.now())) {
+            throw new LedgerValidationException("History is permanently locked. You cannot alter the past.");
+        }
+    }
+
     public TimeBlock createBlock(TimeBlock block) {
+        enforceNotPast(block.getPlannedStart().toLocalDate());
+
         if (block.getPlannedEnd().isBefore(block.getPlannedStart()) ||
                 block.getPlannedEnd().isEqual(block.getPlannedStart())) {
             throw new LedgerValidationException("End time must be strictly after start time.");
@@ -38,6 +47,7 @@ public class TimeBlockService {
 
     @Transactional
     public int applyRippleShift(String userId, LocalDateTime startTime, int offsetMinutes) {
+        enforceNotPast(startTime.toLocalDate());
         return timeBlockRepository.shiftPlannedBlocks(userId, startTime, offsetMinutes);
     }
 
@@ -46,15 +56,18 @@ public class TimeBlockService {
         TimeBlock block = timeBlockRepository.findById(id)
                 .orElseThrow(() -> new LedgerValidationException("Block not found."));
 
+        enforceNotPast(block.getPlannedStart().toLocalDate());
+
         block.setStatus(status);
         return timeBlockRepository.save(block);
     }
 
-    // NEW METHOD: Deletes a block and returns it to the controller
     @Transactional
     public TimeBlock deleteBlock(Long id) {
         TimeBlock block = timeBlockRepository.findById(id)
                 .orElseThrow(() -> new LedgerValidationException("Block not found."));
+
+        enforceNotPast(block.getPlannedStart().toLocalDate());
 
         timeBlockRepository.delete(block);
         return block;
@@ -70,43 +83,36 @@ public class TimeBlockService {
         long totalCompletedMinutes = 0;
 
         for (TimeBlock block : dailyBlocks) {
-            // Use actual times if executed, otherwise fallback to planned times
             LocalDateTime start = block.getActualStart() != null ? block.getActualStart() : block.getPlannedStart();
             LocalDateTime end = block.getActualEnd() != null ? block.getActualEnd() : block.getPlannedEnd();
 
             long duration = Duration.between(start, end).toMinutes();
 
-            // 1. Sleep doesn't count toward or against your waking efficiency
             if ("SLEEP".equalsIgnoreCase(block.getCategory())) {
                 continue;
             }
 
-            // 2. Every waking block you've logged adds to the total potential of the day
             totalWakingMinutes += duration;
 
-            // 3. You only get points if you actually executed and completed it
             if (block.getStatus() == BlockStatus.COMPLETED) {
                 totalCompletedMinutes += duration;
             }
         }
 
-        // Prevent division by zero if the day is completely empty
         if (totalWakingMinutes == 0) return 0.0;
 
-        // Calculate the progress
         double efficiency = (double) totalCompletedMinutes / totalWakingMinutes;
 
-        // Return as a clean percentage rounded to 2 decimal places
         return Math.round((efficiency * 100) * 100.0) / 100.0;
     }
 
-    // NEW METHOD: The Protocol Replication Engine
     @Transactional
     public int copyProtocol(String userId, LocalDate sourceDate, LocalDate targetDate) {
+        enforceNotPast(targetDate); // Can copy FROM the past, but not paste INTO the past
+
         LocalDateTime sourceStartOfDay = sourceDate.atStartOfDay();
         LocalDateTime sourceEndOfDay = sourceStartOfDay.plusDays(1);
 
-        // Fetch all blocks from the source date
         List<TimeBlock> sourceBlocks = timeBlockRepository.findBlocksByDay(userId, sourceStartOfDay, sourceEndOfDay);
 
         if (sourceBlocks.isEmpty()) {
@@ -115,25 +121,21 @@ public class TimeBlockService {
 
         int copiedCount = 0;
         for (TimeBlock original : sourceBlocks) {
-            // Extract just the time (e.g., 05:00 AM)
             LocalTime startTime = original.getPlannedStart().toLocalTime();
             LocalTime endTime = original.getPlannedEnd().toLocalTime();
 
-            // Stitch it to the new target date
             LocalDateTime newStart = LocalDateTime.of(targetDate, startTime);
             LocalDateTime newEnd = LocalDateTime.of(targetDate, endTime);
 
-            // Build a fresh clone
             TimeBlock newBlock = TimeBlock.builder()
                     .userId(userId)
                     .category(original.getCategory())
-                    .status(BlockStatus.PLANNED) // Strictly reset to PLANNED
+                    .status(BlockStatus.PLANNED)
                     .plannedStart(newStart)
                     .plannedEnd(newEnd)
                     .reason(original.getReason())
                     .build();
 
-            // Use our existing createBlock method so it still enforces overlap protections!
             createBlock(newBlock);
             copiedCount++;
         }

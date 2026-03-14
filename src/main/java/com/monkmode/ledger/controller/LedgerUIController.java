@@ -111,7 +111,6 @@ public class LedgerUIController {
         return "dashboard :: protocol-fragment";
     }
 
-    // NEW ENDPOINT: Handles the delete button
     @DeleteMapping("/ui/blocks/{id}")
     public String deleteBlock(@PathVariable Long id, Model model) {
 
@@ -120,6 +119,23 @@ public class LedgerUIController {
 
         populateModel(model, targetDate);
         model.addAttribute("toastMessage", "Block permanently deleted.");
+
+        return "dashboard :: protocol-fragment";
+    }
+
+    @PostMapping("/ui/blocks/copy")
+    public String copyProtocol(
+            @RequestParam String sourceDate,
+            @RequestParam String targetDate,
+            Model model) {
+
+        LocalDate source = LocalDate.parse(sourceDate);
+        LocalDate target = LocalDate.parse(targetDate);
+
+        int copiedCount = timeBlockService.copyProtocol(USER_ID, source, target);
+
+        populateModel(model, target);
+        model.addAttribute("toastMessage", "Successfully cloned " + copiedCount + " blocks to " + targetDate);
 
         return "dashboard :: protocol-fragment";
     }
@@ -143,24 +159,8 @@ public class LedgerUIController {
 
         boolean isHtmxRequest = request.getHeader("HX-Request") != null;
         model.addAttribute("isHtmxRequest", isHtmxRequest);
-    }
 
-    // NEW ENDPOINT: Handles Protocol Replication
-    @PostMapping("/ui/blocks/copy")
-    public String copyProtocol(
-            @RequestParam String sourceDate,
-            @RequestParam String targetDate,
-            Model model) {
-
-        LocalDate source = LocalDate.parse(sourceDate);
-        LocalDate target = LocalDate.parse(targetDate);
-
-        int copiedCount = timeBlockService.copyProtocol(USER_ID, source, target);
-
-        // Load the newly populated target date into the UI
-        populateModel(model, target);
-        model.addAttribute("toastMessage", "Successfully cloned " + copiedCount + " blocks to " + targetDate);
-
-        return "dashboard :: protocol-fragment";
+        // NEW: Check if the viewed date is in the past
+        model.addAttribute("isPastDate", date.isBefore(LocalDate.now()));
     }
 }
