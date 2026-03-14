@@ -2,111 +2,227 @@
 <html xmlns:th="http://www.thymeleaf.org" lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Continuous Time Ledger</title>
+    <title>DayTrack OS</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <style>
         body { background-color: #0f172a; color: #f8fafc; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+        [x-cloak] { display: none !important; }
     </style>
 </head>
-<body class="min-h-screen p-8">
+<body class="h-screen overflow-hidden flex flex-col p-6 relative">
 
-<div class="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
+<div id="toast-container" class="fixed bottom-6 right-6 z-50 flex flex-col gap-2"></div>
 
-    <div class="lg:col-span-1 space-y-8">
+<header class="flex justify-between items-center mb-6 shrink-0">
+    <div class="flex items-center gap-3">
+        <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center shadow-lg shadow-blue-500/20">
+            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+        </div>
+        <h1 class="text-2xl font-bold tracking-tight text-white">DayTrack</h1>
+    </div>
+    <input type="date" name="date" th:value="${currentDate}"
+           hx-get="/ui/protocol" hx-target="#protocol-container" hx-swap="outerHTML"
+           class="bg-slate-800 border border-slate-600 rounded-lg p-2 text-sm text-white focus:ring-blue-500 focus:border-blue-500 shadow-sm cursor-pointer">
+</header>
 
-        <div class="bg-slate-800 px-6 py-6 rounded-xl border border-slate-700 text-center shadow-lg">
-            <p class="text-sm text-slate-400 uppercase tracking-wide font-semibold">Daily Efficiency</p>
-            <p class="text-5xl font-bold text-emerald-400 mt-2" th:text="${efficiencyScore + '%'}">100.0%</p>
-            <p class="text-xs text-slate-500 mt-2" th:text="${currentDate}">2026-03-13</p>
+<div class="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-0">
+
+    <div class="lg:col-span-4 flex flex-col gap-4 overflow-y-auto pr-2 pb-2">
+
+        <div id="efficiency-metric" class="bg-slate-800 px-6 py-5 rounded-xl border border-slate-700 text-center shadow-lg shrink-0">
+            <p class="text-xs text-slate-400 uppercase tracking-wide font-semibold">Daily Efficiency</p>
+            <p class="text-4xl font-bold text-emerald-400 mt-1" th:text="${efficiencyScore + '%'}">100.0%</p>
+            <p class="text-xs text-slate-500 mt-1 flex items-center justify-center gap-2">
+                <span th:text="${currentDate}">2026-03-14</span>
+                <span th:if="${isPastDate}" class="text-[10px] font-bold text-red-500 bg-red-900/30 px-2 py-0.5 rounded uppercase tracking-wider border border-red-500/30">🔒 Locked</span>
+            </p>
         </div>
 
-        <section class="bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-lg">
-            <h2 class="text-lg font-semibold mb-2 text-white">Reality Adjustment</h2>
-            <p class="text-slate-400 text-xs mb-4">Shift all planned blocks down instantly.</p>
-
-            <form hx-post="/ui/blocks/shift" hx-target="#block-list" hx-swap="outerHTML" class="space-y-4">
-                <div>
-                    <label class="block text-xs font-medium text-slate-300 mb-1">Shift from Time</label>
-                    <input type="time" name="startTime" required class="w-full bg-slate-900 border border-slate-600 rounded-lg p-2 text-sm text-white focus:ring-blue-500 focus:border-blue-500">
+        <section class="bg-slate-800 p-5 rounded-xl border border-slate-700 shadow-lg shrink-0">
+            <h2 class="text-md font-semibold mb-3 text-white">Reality Adjustment</h2>
+            <form hx-post="/ui/blocks/shift" hx-target="#protocol-container" hx-swap="outerHTML" class="space-y-3">
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-[11px] font-medium text-slate-400 mb-1 uppercase tracking-wider">Shift from</label>
+                        <input type="time" name="startTime" required class="w-full bg-slate-900 border border-slate-600 rounded-lg p-2 text-sm text-white focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-medium text-slate-400 mb-1 uppercase tracking-wider">Offset (Min)</label>
+                        <input type="number" name="offsetMinutes" value="60" required class="w-full bg-slate-900 border border-slate-600 rounded-lg p-2 text-sm text-white focus:ring-blue-500">
+                    </div>
                 </div>
-                <div>
-                    <label class="block text-xs font-medium text-slate-300 mb-1">Offset (Minutes)</label>
-                    <input type="number" name="offsetMinutes" value="60" required class="w-full bg-slate-900 border border-slate-600 rounded-lg p-2 text-sm text-white focus:ring-blue-500 focus:border-blue-500">
-                </div>
-                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm rounded-lg px-4 py-2 transition-colors">
-                    Shift Schedule
-                </button>
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm rounded-lg px-4 py-2 transition-colors">Shift Schedule</button>
             </form>
         </section>
 
-        <section class="bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-lg">
-            <h2 class="text-lg font-semibold mb-2 text-white">Nightly Orchestration</h2>
-            <p class="text-slate-400 text-xs mb-4">Insert blocks. The 24 hours must be accounted for.</p>
-
-            <form hx-post="/ui/blocks" hx-target="#block-list" hx-swap="outerHTML" class="space-y-4">
+        <section class="bg-slate-800 p-5 rounded-xl border border-slate-700 shadow-lg shrink-0">
+            <h2 class="text-md font-semibold mb-3 text-white">Nightly Orchestration</h2>
+            <form hx-post="/ui/blocks" hx-target="#protocol-container" hx-swap="outerHTML"
+                  class="space-y-3" x-data="{ daySelection: 'TOMORROW' }">
 
                 <div>
-                    <label class="block text-xs font-medium text-slate-300 mb-1">Category</label>
-                    <input list="category-options" name="category" required placeholder="Select or type new..."
-                           class="w-full bg-slate-900 border border-slate-600 rounded-lg p-2 text-sm text-white focus:ring-blue-500">
-                    <datalist id="category-options">
-                        <option th:each="cat : ${categories}" th:value="${cat}"></option>
-                    </datalist>
+                    <label class="block text-[11px] font-medium text-slate-400 mb-1 uppercase tracking-wider">Category</label>
+                    <input list="category-options" name="category" required placeholder="Select or type new..." class="w-full bg-slate-900 border border-slate-600 rounded-lg p-2 text-sm text-white focus:ring-blue-500">
+                    <datalist id="category-options"><option th:each="cat : ${categories}" th:value="${cat}"></option></datalist>
                 </div>
 
-                <div class="grid grid-cols-3 gap-2">
+                <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label class="block text-xs font-medium text-slate-300 mb-1">Day</label>
-                        <select name="targetDate" class="w-full bg-slate-900 border border-slate-600 rounded-lg p-2 text-xs text-white">
+                        <label class="block text-[11px] font-medium text-slate-400 mb-1 uppercase tracking-wider">Day</label>
+                        <select name="dayType" x-model="daySelection" class="w-full bg-slate-900 border border-slate-600 rounded-lg p-2 text-sm text-white">
                             <option value="TODAY">Today</option>
-                            <option value="TOMORROW" selected>Tomorrow</option>
+                            <option value="TOMORROW">Tomorrow</option>
+                            <option value="CUSTOM">Custom Date</option>
                         </select>
                     </div>
+                    <div x-show="daySelection === 'CUSTOM'" x-cloak>
+                        <label class="block text-[11px] font-medium text-slate-400 mb-1 uppercase tracking-wider">Select Date</label>
+                        <input type="date" name="customDate" x-bind:required="daySelection === 'CUSTOM'"
+                               class="w-full bg-slate-900 border border-slate-600 rounded-lg p-2 text-sm text-white">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label class="block text-xs font-medium text-slate-300 mb-1">Start</label>
-                        <input type="time" name="startTime" required class="w-full bg-slate-900 border border-slate-600 rounded-lg p-2 text-xs text-white">
+                        <label class="block text-[11px] font-medium text-slate-400 mb-1 uppercase tracking-wider">Start</label>
+                        <input type="time" name="startTime" required class="w-full bg-slate-900 border border-slate-600 rounded-lg p-2 text-sm text-white">
                     </div>
                     <div>
-                        <label class="block text-xs font-medium text-slate-300 mb-1">End</label>
-                        <input type="time" name="endTime" required class="w-full bg-slate-900 border border-slate-600 rounded-lg p-2 text-xs text-white">
+                        <label class="block text-[11px] font-medium text-slate-400 mb-1 uppercase tracking-wider">End</label>
+                        <input type="time" name="endTime" required class="w-full bg-slate-900 border border-slate-600 rounded-lg p-2 text-sm text-white">
                     </div>
                 </div>
 
                 <div>
-                    <label class="block text-xs font-medium text-slate-300 mb-1">Reason / Focus</label>
-                    <input type="text" name="reason" placeholder="e.g. Graph Algorithms" class="w-full bg-slate-900 border border-slate-600 rounded-lg p-2 text-sm text-white focus:ring-blue-500">
+                    <label class="block text-[11px] font-medium text-slate-400 mb-1 uppercase tracking-wider">Focus</label>
+                    <input type="text" name="reason" placeholder="e.g. Tree Traversal" required class="w-full bg-slate-900 border border-slate-600 rounded-lg p-2 text-sm text-white focus:ring-blue-500">
                 </div>
 
-                <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-sm rounded-lg px-4 py-2 transition-colors">
-                    Lock Block
-                </button>
+                <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-sm rounded-lg px-4 py-2 transition-colors">Lock Block</button>
+            </form>
+        </section>
+
+        <section class="bg-slate-800 p-5 rounded-xl border border-slate-700 shadow-lg shrink-0">
+            <h2 class="text-md font-semibold mb-3 text-white">Protocol Replication</h2>
+            <form hx-post="/ui/blocks/copy" hx-target="#protocol-container" hx-swap="outerHTML" class="space-y-3">
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-[11px] font-medium text-slate-400 mb-1 uppercase tracking-wider">Copy From</label>
+                        <input type="date" name="sourceDate" th:value="${currentDate}" required class="w-full bg-slate-900 border border-slate-600 rounded-lg p-2 text-sm text-white focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-medium text-slate-400 mb-1 uppercase tracking-wider">Paste To</label>
+                        <input type="date" name="targetDate" th:value="${#temporals.format(#temporals.createNow().plusDays(1), 'yyyy-MM-dd')}" required class="w-full bg-slate-900 border border-slate-600 rounded-lg p-2 text-sm text-white focus:ring-blue-500">
+                    </div>
+                </div>
+                <button type="submit" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-medium text-sm rounded-lg px-4 py-2 transition-colors">Clone Protocol</button>
             </form>
         </section>
     </div>
 
-    <div class="lg:col-span-2">
-        <h2 class="text-2xl font-bold mb-6 text-white border-b border-slate-700 pb-2">Active Protocol</h2>
+    <div class="lg:col-span-8 flex flex-col bg-slate-800 rounded-xl border border-slate-700 shadow-lg overflow-hidden h-full">
 
-        <div id="block-list" th:fragment="block-list-fragment" class="space-y-3">
+        <div id="protocol-container" th:fragment="protocol-fragment" class="flex flex-col h-full">
 
-            <div th:if="${blocks.isEmpty()}" class="text-center p-8 border border-dashed border-slate-600 rounded-xl text-slate-500">
-                No blocks planned for today. Start the Nightly Orchestration.
-            </div>
+            <th:block th:if="${isHtmxRequest}">
+                <div id="toast-container" hx-swap-oob="true" class="fixed bottom-6 right-6 z-50 flex flex-col gap-2">
+                    <div th:if="${toastMessage}"
+                         x-data="{ show: true }" x-init="setTimeout(() => show = false, 4000)" x-show="show"
+                         x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-2" x-transition:enter-end="opacity-100 translate-y-0"
+                         x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100 translate-y-0" x-transition:leave-end="opacity-0 translate-y-2"
+                         class="bg-emerald-600 text-white px-6 py-4 rounded-xl shadow-2xl flex items-center gap-3 border border-emerald-500">
+                        <svg class="w-5 h-5 text-emerald-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                        <span class="font-medium text-sm" th:text="${toastMessage}"></span>
+                    </div>
+                </div>
 
-            <div th:each="block : ${blocks}" class="bg-slate-800 border-l-4 border-blue-500 p-4 rounded-r-xl shadow-lg flex justify-between items-center transition-all hover:bg-slate-700">
-                <div>
-                    <span class="text-xs font-bold text-blue-400 uppercase tracking-wider" th:text="${block.category}">DSA</span>
-                    <h3 class="font-medium text-lg text-white" th:text="${block.reason}">Graph Algorithms</h3>
-                    <p class="text-sm text-slate-400">
-                        <span th:text="${#temporals.format(block.plannedStart, 'hh:mm a')}">06:00 AM</span>
-                        -
-                        <span th:text="${#temporals.format(block.plannedEnd, 'hh:mm a')}">08:00 AM</span>
+                <div id="efficiency-metric" hx-swap-oob="true" class="bg-slate-800 px-6 py-5 rounded-xl border border-slate-700 text-center shadow-lg shrink-0">
+                    <p class="text-xs text-slate-400 uppercase tracking-wide font-semibold">Daily Efficiency</p>
+                    <p class="text-4xl font-bold text-emerald-400 mt-1" th:text="${efficiencyScore + '%'}">100.0%</p>
+                    <p class="text-xs text-slate-500 mt-1 flex items-center justify-center gap-2">
+                        <span th:text="${currentDate}">2026-03-14</span>
+                        <span th:if="${isPastDate}" class="text-[10px] font-bold text-red-500 bg-red-900/30 px-2 py-0.5 rounded uppercase tracking-wider border border-red-500/30">🔒 Locked</span>
                     </p>
                 </div>
-                <div>
-                    <span class="bg-slate-700 text-slate-300 text-xs font-semibold px-2.5 py-1 rounded shadow" th:text="${block.status}">PLANNED</span>
-                </div>
+            </th:block>
+
+            <div class="bg-slate-900/80 border-b border-slate-700 shrink-0">
+                <table class="w-full text-left text-sm text-slate-300">
+                    <thead class="text-xs uppercase text-slate-500">
+                    <tr>
+                        <th class="px-6 py-4 font-semibold w-1/4">Time Window</th>
+                        <th class="px-6 py-4 font-semibold w-1/4">Category</th>
+                        <th class="px-6 py-4 font-semibold w-1/3">Focus</th>
+                        <th class="px-6 py-4 font-semibold text-right w-1/6">Status</th>
+                    </tr>
+                    </thead>
+                </table>
+            </div>
+
+            <div class="flex-1 overflow-y-auto">
+                <table class="w-full text-left text-sm text-slate-300">
+                    <tbody class="divide-y divide-slate-700/50">
+
+                    <tr th:if="${blocks.isEmpty()}">
+                        <td colspan="4" class="px-6 py-16 text-center text-slate-500">
+                            <p class="text-base">No protocol established for this date.</p>
+                            <p class="text-xs mt-1">Execute the Nightly Orchestration to populate.</p>
+                        </td>
+                    </tr>
+
+                    <tr th:each="block : ${blocks}" class="hover:bg-slate-700/30 transition-colors group">
+                        <td class="px-6 py-4 whitespace-nowrap font-medium text-slate-200 w-1/4">
+                            <span th:text="${#temporals.format(block.plannedStart, 'hh:mm a')}"></span>
+                            <span class="text-slate-500 mx-1">→</span>
+                            <span th:text="${#temporals.format(block.plannedEnd, 'hh:mm a')}"></span>
+                        </td>
+                        <td class="px-6 py-4 w-1/4">
+                            <span class="text-[11px] font-bold text-blue-400 uppercase tracking-wider" th:text="${block.category}"></span>
+                        </td>
+                        <td class="px-6 py-4 text-slate-300 w-1/3 truncate" th:text="${block.reason}"></td>
+
+                        <td class="px-6 py-4 w-1/6">
+                            <div class="flex justify-end items-center gap-3">
+                                <select name="status"
+                                        th:disabled="${isPastDate}"
+                                        th:attr="hx-post=@{/ui/blocks/{id}/status(id=${block.id})}"
+                                        hx-trigger="change"
+                                        hx-target="#protocol-container"
+                                        hx-swap="outerHTML"
+                                        class="bg-slate-700/50 border border-slate-600 text-[11px] font-semibold px-2 py-1 rounded shadow-sm focus:ring-blue-500 appearance-none text-center outline-none transition-colors"
+                                        th:classappend="${
+                                            (isPastDate ? 'cursor-not-allowed opacity-60 ' : 'cursor-pointer ') +
+                                            (block.status.name() == 'COMPLETED' ? 'text-emerald-400 border-emerald-500/50 bg-emerald-900/20' :
+                                            (block.status.name() == 'WASTED' ? 'text-red-400 border-red-500/50 bg-red-900/20' :
+                                            'text-slate-300'))
+                                        }">
+                                    <option value="PLANNED" th:selected="${block.status.name() == 'PLANNED'}">PLANNED</option>
+                                    <option value="COMPLETED" th:selected="${block.status.name() == 'COMPLETED'}">COMPLETED</option>
+                                    <option value="SKIPPED" th:selected="${block.status.name() == 'SKIPPED'}">SKIPPED</option>
+                                    <option value="WASTED" th:selected="${block.status.name() == 'WASTED'}">WASTED</option>
+                                </select>
+
+                                <button th:if="${!isPastDate}"
+                                        th:attr="hx-delete=@{/ui/blocks/{id}(id=${block.id})}"
+                                        hx-confirm="Are you sure you want to delete this time block?"
+                                        hx-target="#protocol-container"
+                                        hx-swap="outerHTML"
+                                        class="text-slate-500 hover:text-red-400 transition-colors outline-none focus:outline-none"
+                                        title="Delete Block">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
