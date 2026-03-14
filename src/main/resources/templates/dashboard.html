@@ -1,231 +1,400 @@
-<!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org" lang="en">
 <head>
     <meta charset="UTF-8">
     <title>DayTrack OS</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <style>
-        body { background-color: #0f172a; color: #f8fafc; }
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: #475569; }
-        [x-cloak] { display: none !important; }
-    </style>
-</head>
-<body class="h-screen overflow-hidden flex flex-col p-6 relative">
+    <!DOCTYPE html>
+    <html xmlns:th="http://www.thymeleaf.org" lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>DayTrack OS</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
-<div id="toast-container" class="fixed bottom-6 right-6 z-50 flex flex-col gap-2"></div>
+        <script src="https://unpkg.com/htmx.org@1.9.10"></script>
 
-<header class="flex justify-between items-center mb-6 shrink-0">
-    <div class="flex items-center gap-3">
-        <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center shadow-lg shadow-blue-500/20">
-            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+        <style>
+            :root, [data-theme="monk"] {
+                --c-bg-900: #0f172a;
+                --c-bg-800: #1e293b;
+                --c-bg-700: #334155;
+                --c-bg-600: #475569;
+                --c-text-500: #64748b;
+                --c-text-400: #94a3b8;
+                --c-text-300: #cbd5e1;
+                --c-text-200: #e2e8f0;
+
+                --c-accent-400: #60a5fa;
+                --c-accent-500: #3b82f6;
+                --c-accent-600: #2563eb;
+                --c-accent-700: #1d4ed8;
+            }
+
+            [data-theme="ceo"] {
+                --c-bg-900: #000000;
+                --c-bg-800: #111111;
+                --c-bg-700: #262626;
+                --c-bg-600: #404040;
+                --c-text-500: #737373;
+                --c-text-400: #a3a3a3;
+                --c-text-300: #d4d4d4;
+                --c-text-200: #f5f5f5;
+
+                --c-accent-400: #fbbf24;
+                --c-accent-500: #f59e0b;
+                --c-accent-600: #d97706;
+                --c-accent-700: #b45309;
+            }
+
+            [data-theme="cyberpunk"] {
+                --c-bg-900: #0f0019;
+                --c-bg-800: #1a0029;
+                --c-bg-700: #33004c;
+                --c-bg-600: #4c0073;
+                --c-text-500: #a855f7;
+                --c-text-400: #c084fc;
+                --c-text-300: #e9d5ff;
+                --c-text-200: #f3e8ff;
+
+                --c-accent-400: #22d3ee;
+                --c-accent-500: #06b6d4;
+                --c-accent-600: #0891b2;
+                --c-accent-700: #0e7490;
+            }
+
+            [data-theme="hacker"] {
+                --c-bg-900: #000000;
+                --c-bg-800: #050505;
+                --c-bg-700: #111111;
+                --c-bg-600: #222222;
+                --c-text-500: #166534;
+                --c-text-400: #22c55e;
+                --c-text-300: #4ade80;
+                --c-text-200: #86efac;
+
+                --c-accent-400: #4ade80;
+                --c-accent-500: #22c55e;
+                --c-accent-600: #16a34a;
+                --c-accent-700: #15803d;
+            }
+
+            [data-theme="ocean"] {
+                --c-bg-900: #082f49;
+                --c-bg-800: #0c4a6e;
+                --c-bg-700: #075985;
+                --c-bg-600: #0369a1;
+                --c-text-500: #7dd3fc;
+                --c-text-400: #bae6fd;
+                --c-text-300: #e0f2fe;
+                --c-text-200: #f0f9ff;
+
+                --c-accent-400: #fb7185;
+                --c-accent-500: #f43f5e;
+                --c-accent-600: #e11d48;
+                --c-accent-700: #be123c;
+            }
+
+            body {
+                background-color: var(--c-bg-900);
+                color: #f8fafc;
+                transition: background-color 0.4s ease;
+            }
+
+            .bg-slate-800, .bg-slate-900, .border-slate-700, .border-slate-600, .text-slate-400, .text-slate-300 {
+                transition: all 0.4s ease;
+            }
+
+            ::-webkit-scrollbar { width: 8px; }
+            ::-webkit-scrollbar-track { background: transparent; }
+            ::-webkit-scrollbar-thumb { background: var(--c-bg-700); border-radius: 10px; }
+            ::-webkit-scrollbar-thumb:hover { background: var(--c-bg-600); }
+            [x-cloak] { display: none !important; }
+        </style>
+
+        <script>
+            document.documentElement.setAttribute('data-theme', localStorage.getItem('daytrack-theme') || 'monk');
+        </script>
+
+        <script>
+            tailwind.config = {
+                theme: {
+                    extend: {
+                        colors: {
+                            slate: {
+                                900: 'var(--c-bg-900)',
+                                800: 'var(--c-bg-800)',
+                                700: 'var(--c-bg-700)',
+                                600: 'var(--c-bg-600)',
+                                500: 'var(--c-text-500)',
+                                400: 'var(--c-text-400)',
+                                300: 'var(--c-text-300)',
+                                200: 'var(--c-text-200)',
+                            },
+                            blue: {
+                                400: 'var(--c-accent-400)',
+                                500: 'var(--c-accent-500)',
+                                600: 'var(--c-accent-600)',
+                                700: 'var(--c-accent-700)',
+                            }
+                        }
+                    }
+                }
+            }
+        </script>
+    </head>
+    <body class="h-screen overflow-hidden flex flex-col p-6 relative">
+
+    <div id="toast-container" class="fixed bottom-6 right-6 z-50 flex flex-col gap-2"></div>
+
+    <header class="flex justify-between items-center mb-6 shrink-0">
+        <div class="flex items-center gap-3">
+            <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center shadow-lg shadow-blue-500/20">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            </div>
+            <h1 class="text-2xl font-bold tracking-tight text-white">DayTrack</h1>
         </div>
-        <h1 class="text-2xl font-bold tracking-tight text-white">DayTrack</h1>
-    </div>
-    <input type="date" name="date" th:value="${currentDate}"
-           hx-get="/ui/protocol" hx-target="#protocol-container" hx-swap="outerHTML"
-           class="bg-slate-800 border border-slate-600 rounded-lg p-2 text-sm text-white focus:ring-blue-500 focus:border-blue-500 shadow-sm cursor-pointer">
-</header>
 
-<div class="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-0">
+        <div class="flex items-center gap-4">
+            <div x-data="{ open: false, theme: localStorage.getItem('daytrack-theme') || 'monk' }"
+                 x-init="$watch('theme', val => { document.documentElement.setAttribute('data-theme', val); localStorage.setItem('daytrack-theme', val); })"
+                 class="relative">
 
-    <div class="lg:col-span-4 flex flex-col gap-4 overflow-y-auto pr-2 pb-2">
+                <button @click="open = !open" class="text-sm font-medium text-slate-300 hover:text-white transition-colors flex items-center gap-2 bg-slate-800 border border-slate-600 px-3 py-2 rounded-lg shadow-sm">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"></path></svg>
+                    <span class="hidden sm:inline">Theme</span>
+                </button>
 
-        <div id="efficiency-metric" class="bg-slate-800 px-6 py-5 rounded-xl border border-slate-700 text-center shadow-lg shrink-0">
-            <p class="text-xs text-slate-400 uppercase tracking-wide font-semibold">Daily Efficiency</p>
-            <p class="text-4xl font-bold text-emerald-400 mt-1" th:text="${efficiencyScore + '%'}">100.0%</p>
-            <p class="text-xs text-slate-500 mt-1 flex items-center justify-center gap-2">
-                <span th:text="${currentDate}">2026-03-14</span>
-                <span th:if="${isPastDate}" class="text-[10px] font-bold text-red-500 bg-red-900/30 px-2 py-0.5 rounded uppercase tracking-wider border border-red-500/30">🔒 Locked</span>
-            </p>
-        </div>
-
-        <section class="bg-slate-800 p-5 rounded-xl border border-slate-700 shadow-lg shrink-0">
-            <h2 class="text-md font-semibold mb-3 text-white">Reality Adjustment</h2>
-            <form hx-post="/ui/blocks/shift" hx-target="#protocol-container" hx-swap="outerHTML" class="space-y-3">
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="block text-[11px] font-medium text-slate-400 mb-1 uppercase tracking-wider">Shift from</label>
-                        <input type="time" name="startTime" required class="w-full bg-slate-900 border border-slate-600 rounded-lg p-2 text-sm text-white focus:ring-blue-500">
-                    </div>
-                    <div>
-                        <label class="block text-[11px] font-medium text-slate-400 mb-1 uppercase tracking-wider">Offset (Min)</label>
-                        <input type="number" name="offsetMinutes" value="60" required class="w-full bg-slate-900 border border-slate-600 rounded-lg p-2 text-sm text-white focus:ring-blue-500">
-                    </div>
+                <div x-show="open" @click.away="open = false" x-cloak
+                     x-transition:enter="transition ease-out duration-100"
+                     x-transition:enter-start="transform opacity-0 scale-95"
+                     x-transition:enter-end="transform opacity-100 scale-100"
+                     x-transition:leave="transition ease-in duration-75"
+                     x-transition:leave-start="transform opacity-100 scale-100"
+                     x-transition:leave-end="transform opacity-0 scale-95"
+                     class="absolute right-0 mt-2 w-48 bg-slate-800 border border-slate-700 rounded-lg shadow-xl z-50 overflow-hidden">
+                    <button @click="theme = 'monk'; open = false" class="w-full text-left px-4 py-3 text-sm flex items-center gap-3 transition-colors hover:bg-slate-700" :class="theme === 'monk' ? 'text-blue-400 bg-slate-900/50' : 'text-slate-300'">🌑 Monk Mode</button>
+                    <button @click="theme = 'ceo'; open = false" class="w-full text-left px-4 py-3 text-sm flex items-center gap-3 transition-colors hover:bg-slate-700" :class="theme === 'ceo' ? 'text-blue-400 bg-slate-900/50' : 'text-slate-300'">👔 CEO Luxury</button>
+                    <button @click="theme = 'cyberpunk'; open = false" class="w-full text-left px-4 py-3 text-sm flex items-center gap-3 transition-colors hover:bg-slate-700" :class="theme === 'cyberpunk' ? 'text-blue-400 bg-slate-900/50' : 'text-slate-300'">🤖 Cyberpunk</button>
+                    <button @click="theme = 'hacker'; open = false" class="w-full text-left px-4 py-3 text-sm flex items-center gap-3 transition-colors hover:bg-slate-700" :class="theme === 'hacker' ? 'text-blue-400 bg-slate-900/50' : 'text-slate-300'">💻 Hacker Terminal</button>
+                    <button @click="theme = 'ocean'; open = false" class="w-full text-left px-4 py-3 text-sm flex items-center gap-3 transition-colors hover:bg-slate-700" :class="theme === 'ocean' ? 'text-blue-400 bg-slate-900/50' : 'text-slate-300'">🌊 Ocean Depth</button>
                 </div>
-                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm rounded-lg px-4 py-2 transition-colors">Shift Schedule</button>
-            </form>
-        </section>
-
-        <section class="bg-slate-800 p-5 rounded-xl border border-slate-700 shadow-lg shrink-0">
-            <h2 class="text-md font-semibold mb-3 text-white">Nightly Orchestration</h2>
-            <form hx-post="/ui/blocks" hx-target="#protocol-container" hx-swap="outerHTML"
-                  class="space-y-3" x-data="{ daySelection: 'TOMORROW' }">
-
-                <div>
-                    <label class="block text-[11px] font-medium text-slate-400 mb-1 uppercase tracking-wider">Category</label>
-                    <input list="category-options" name="category" required placeholder="Select or type new..." class="w-full bg-slate-900 border border-slate-600 rounded-lg p-2 text-sm text-white focus:ring-blue-500">
-                    <datalist id="category-options"><option th:each="cat : ${categories}" th:value="${cat}"></option></datalist>
-                </div>
-
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="block text-[11px] font-medium text-slate-400 mb-1 uppercase tracking-wider">Day</label>
-                        <select name="dayType" x-model="daySelection" class="w-full bg-slate-900 border border-slate-600 rounded-lg p-2 text-sm text-white">
-                            <option value="TODAY">Today</option>
-                            <option value="TOMORROW">Tomorrow</option>
-                            <option value="CUSTOM">Custom Date</option>
-                        </select>
-                    </div>
-                    <div x-show="daySelection === 'CUSTOM'" x-cloak>
-                        <label class="block text-[11px] font-medium text-slate-400 mb-1 uppercase tracking-wider">Select Date</label>
-                        <input type="date" name="customDate" x-bind:required="daySelection === 'CUSTOM'"
-                               class="w-full bg-slate-900 border border-slate-600 rounded-lg p-2 text-sm text-white">
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="block text-[11px] font-medium text-slate-400 mb-1 uppercase tracking-wider">Start</label>
-                        <input type="time" name="startTime" required class="w-full bg-slate-900 border border-slate-600 rounded-lg p-2 text-sm text-white">
-                    </div>
-                    <div>
-                        <label class="block text-[11px] font-medium text-slate-400 mb-1 uppercase tracking-wider">End</label>
-                        <input type="time" name="endTime" required class="w-full bg-slate-900 border border-slate-600 rounded-lg p-2 text-sm text-white">
-                    </div>
-                </div>
-
-                <div>
-                    <label class="block text-[11px] font-medium text-slate-400 mb-1 uppercase tracking-wider">Focus</label>
-                    <input type="text" name="reason" placeholder="e.g. Tree Traversal" required class="w-full bg-slate-900 border border-slate-600 rounded-lg p-2 text-sm text-white focus:ring-blue-500">
-                </div>
-
-                <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-sm rounded-lg px-4 py-2 transition-colors">Lock Block</button>
-            </form>
-        </section>
-
-        <section class="bg-slate-800 p-5 rounded-xl border border-slate-700 shadow-lg shrink-0">
-            <h2 class="text-md font-semibold mb-3 text-white">Protocol Replication</h2>
-            <form hx-post="/ui/blocks/copy" hx-target="#protocol-container" hx-swap="outerHTML" class="space-y-3">
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="block text-[11px] font-medium text-slate-400 mb-1 uppercase tracking-wider">Copy From</label>
-                        <input type="date" name="sourceDate" th:value="${currentDate}" required class="w-full bg-slate-900 border border-slate-600 rounded-lg p-2 text-sm text-white focus:ring-blue-500">
-                    </div>
-                    <div>
-                        <label class="block text-[11px] font-medium text-slate-400 mb-1 uppercase tracking-wider">Paste To</label>
-                        <input type="date" name="targetDate" th:value="${#temporals.format(#temporals.createNow().plusDays(1), 'yyyy-MM-dd')}" required class="w-full bg-slate-900 border border-slate-600 rounded-lg p-2 text-sm text-white focus:ring-blue-500">
-                    </div>
-                </div>
-                <button type="submit" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-medium text-sm rounded-lg px-4 py-2 transition-colors">Clone Protocol</button>
-            </form>
-        </section>
-    </div>
-
-    <div class="lg:col-span-8 flex flex-col bg-slate-800 rounded-xl border border-slate-700 shadow-lg overflow-hidden h-full">
-
-        <div id="protocol-container" th:fragment="protocol-fragment" class="flex flex-col h-full">
-
-            <th:block th:if="${isHtmxRequest}">
-                <div id="toast-container" hx-swap-oob="true" class="fixed bottom-6 right-6 z-50 flex flex-col gap-2">
-                    <div th:if="${toastMessage}"
-                         x-data="{ show: true }" x-init="setTimeout(() => show = false, 4000)" x-show="show"
-                         x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-2" x-transition:enter-end="opacity-100 translate-y-0"
-                         x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100 translate-y-0" x-transition:leave-end="opacity-0 translate-y-2"
-                         class="bg-emerald-600 text-white px-6 py-4 rounded-xl shadow-2xl flex items-center gap-3 border border-emerald-500">
-                        <svg class="w-5 h-5 text-emerald-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                        <span class="font-medium text-sm" th:text="${toastMessage}"></span>
-                    </div>
-                </div>
-
-                <div id="efficiency-metric" hx-swap-oob="true" class="bg-slate-800 px-6 py-5 rounded-xl border border-slate-700 text-center shadow-lg shrink-0">
-                    <p class="text-xs text-slate-400 uppercase tracking-wide font-semibold">Daily Efficiency</p>
-                    <p class="text-4xl font-bold text-emerald-400 mt-1" th:text="${efficiencyScore + '%'}">100.0%</p>
-                    <p class="text-xs text-slate-500 mt-1 flex items-center justify-center gap-2">
-                        <span th:text="${currentDate}">2026-03-14</span>
-                        <span th:if="${isPastDate}" class="text-[10px] font-bold text-red-500 bg-red-900/30 px-2 py-0.5 rounded uppercase tracking-wider border border-red-500/30">🔒 Locked</span>
-                    </p>
-                </div>
-            </th:block>
-
-            <div class="bg-slate-900/80 border-b border-slate-700 shrink-0">
-                <table class="w-full text-left text-sm text-slate-300">
-                    <thead class="text-xs uppercase text-slate-500">
-                    <tr>
-                        <th class="px-6 py-4 font-semibold w-1/4">Time Window</th>
-                        <th class="px-6 py-4 font-semibold w-1/4">Category</th>
-                        <th class="px-6 py-4 font-semibold w-1/3">Focus</th>
-                        <th class="px-6 py-4 font-semibold text-right w-1/6">Status</th>
-                    </tr>
-                    </thead>
-                </table>
             </div>
 
-            <div class="flex-1 overflow-y-auto">
-                <table class="w-full text-left text-sm text-slate-300">
-                    <tbody class="divide-y divide-slate-700/50">
+            <a href="/analytics" class="text-sm font-medium text-slate-300 hover:text-white transition-colors flex items-center gap-2 bg-slate-800 border border-slate-600 px-3 py-2 rounded-lg shadow-sm">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                <span class="hidden sm:inline">Analytics</span>
+            </a>
 
-                    <tr th:if="${blocks.isEmpty()}">
-                        <td colspan="4" class="px-6 py-16 text-center text-slate-500">
-                            <p class="text-base">No protocol established for this date.</p>
-                            <p class="text-xs mt-1">Execute the Nightly Orchestration to populate.</p>
-                        </td>
-                    </tr>
+            <input type="date" id="main-date-picker" name="date" th:value="${currentDate}"
+                   hx-trigger="change"
+                   hx-get="/ui/protocol" hx-target="#protocol-container" hx-swap="outerHTML"
+                   class="bg-slate-800 border border-slate-600 rounded-lg p-2 text-sm text-white focus:ring-blue-500 focus:border-blue-500 shadow-sm cursor-pointer">
+        </div>
+    </header>
 
-                    <tr th:each="block : ${blocks}" class="hover:bg-slate-700/30 transition-colors group">
-                        <td class="px-6 py-4 whitespace-nowrap font-medium text-slate-200 w-1/4">
-                            <span th:text="${#temporals.format(block.plannedStart, 'hh:mm a')}"></span>
-                            <span class="text-slate-500 mx-1">→</span>
-                            <span th:text="${#temporals.format(block.plannedEnd, 'hh:mm a')}"></span>
-                        </td>
-                        <td class="px-6 py-4 w-1/4">
-                            <span class="text-[11px] font-bold text-blue-400 uppercase tracking-wider" th:text="${block.category}"></span>
-                        </td>
-                        <td class="px-6 py-4 text-slate-300 w-1/3 truncate" th:text="${block.reason}"></td>
+    <div class="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-0">
 
-                        <td class="px-6 py-4 w-1/6">
-                            <div class="flex justify-end items-center gap-3">
-                                <select name="status"
-                                        th:disabled="${isPastDate}"
-                                        th:attr="hx-post=@{/ui/blocks/{id}/status(id=${block.id})}"
-                                        hx-trigger="change"
-                                        hx-target="#protocol-container"
-                                        hx-swap="outerHTML"
-                                        class="bg-slate-700/50 border border-slate-600 text-[11px] font-semibold px-2 py-1 rounded shadow-sm focus:ring-blue-500 appearance-none text-center outline-none transition-colors"
-                                        th:classappend="${
+        <div class="lg:col-span-4 flex flex-col gap-4 overflow-y-auto pr-2 pb-2">
+
+            <div id="efficiency-metric" class="bg-slate-800 px-6 py-5 rounded-xl border border-slate-700 text-center shadow-lg shrink-0">
+                <p class="text-xs text-slate-400 uppercase tracking-wide font-semibold">Daily Efficiency</p>
+                <p class="text-4xl font-bold text-emerald-400 mt-1" th:text="${efficiencyScore + '%'}">100.0%</p>
+                <p class="text-xs text-slate-500 mt-1 flex items-center justify-center gap-2">
+                    <span th:text="${currentDate}">2026-03-14</span>
+                    <span th:if="${isPastDate}" class="text-[10px] font-bold text-red-500 bg-red-900/30 px-2 py-0.5 rounded uppercase tracking-wider border border-red-500/30">🔒 Locked</span>
+                </p>
+            </div>
+
+            <section class="bg-slate-800 p-5 rounded-xl border border-slate-700 shadow-lg shrink-0">
+                <h2 class="text-md font-semibold mb-3 text-white">Reality Adjustment</h2>
+                <form hx-post="/ui/blocks/shift" hx-target="#protocol-container" hx-swap="outerHTML" class="space-y-3">
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-[11px] font-medium text-slate-400 mb-1 uppercase tracking-wider">Shift from</label>
+                            <input type="time" name="startTime" required class="w-full bg-slate-900 border border-slate-600 rounded-lg p-2 text-sm text-white focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-medium text-slate-400 mb-1 uppercase tracking-wider">Offset (Min)</label>
+                            <input type="number" name="offsetMinutes" value="60" required class="w-full bg-slate-900 border border-slate-600 rounded-lg p-2 text-sm text-white focus:ring-blue-500">
+                        </div>
+                    </div>
+                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm rounded-lg px-4 py-2 transition-colors">Shift Schedule</button>
+                </form>
+            </section>
+
+            <section class="bg-slate-800 p-5 rounded-xl border border-slate-700 shadow-lg shrink-0">
+                <h2 class="text-md font-semibold mb-3 text-white">Nightly Orchestration</h2>
+                <form hx-post="/ui/blocks" hx-target="#protocol-container" hx-swap="outerHTML"
+                      class="space-y-3" x-data="{ daySelection: 'TOMORROW' }">
+
+                    <div>
+                        <label class="block text-[11px] font-medium text-slate-400 mb-1 uppercase tracking-wider">Category</label>
+                        <input list="category-options" name="category" required placeholder="Select or type new..." class="w-full bg-slate-900 border border-slate-600 rounded-lg p-2 text-sm text-white focus:ring-blue-500">
+                        <datalist id="category-options"><option th:each="cat : ${categories}" th:value="${cat}"></option></datalist>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-[11px] font-medium text-slate-400 mb-1 uppercase tracking-wider">Day</label>
+                            <select name="dayType" x-model="daySelection" class="w-full bg-slate-900 border border-slate-600 rounded-lg p-2 text-sm text-white">
+                                <option value="TODAY">Today</option>
+                                <option value="TOMORROW">Tomorrow</option>
+                                <option value="CUSTOM">Custom Date</option>
+                            </select>
+                        </div>
+                        <div x-show="daySelection === 'CUSTOM'" x-cloak>
+                            <label class="block text-[11px] font-medium text-slate-400 mb-1 uppercase tracking-wider">Select Date</label>
+                            <input type="date" name="customDate" x-bind:required="daySelection === 'CUSTOM'"
+                                   class="w-full bg-slate-900 border border-slate-600 rounded-lg p-2 text-sm text-white">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-[11px] font-medium text-slate-400 mb-1 uppercase tracking-wider">Start</label>
+                            <input type="time" name="startTime" required class="w-full bg-slate-900 border border-slate-600 rounded-lg p-2 text-sm text-white">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-medium text-slate-400 mb-1 uppercase tracking-wider">End</label>
+                            <input type="time" name="endTime" required class="w-full bg-slate-900 border border-slate-600 rounded-lg p-2 text-sm text-white">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-[11px] font-medium text-slate-400 mb-1 uppercase tracking-wider">Focus</label>
+                        <input type="text" name="reason" placeholder="e.g. Tree Traversal" required class="w-full bg-slate-900 border border-slate-600 rounded-lg p-2 text-sm text-white focus:ring-blue-500">
+                    </div>
+
+                    <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-sm rounded-lg px-4 py-2 transition-colors">Lock Block</button>
+                </form>
+            </section>
+
+            <section class="bg-slate-800 p-5 rounded-xl border border-slate-700 shadow-lg shrink-0">
+                <h2 class="text-md font-semibold mb-3 text-white">Protocol Replication</h2>
+                <form hx-post="/ui/blocks/copy" hx-target="#protocol-container" hx-swap="outerHTML" class="space-y-3">
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-[11px] font-medium text-slate-400 mb-1 uppercase tracking-wider">Copy From</label>
+                            <input type="date" name="sourceDate" th:value="${currentDate}" required class="w-full bg-slate-900 border border-slate-600 rounded-lg p-2 text-sm text-white focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-medium text-slate-400 mb-1 uppercase tracking-wider">Paste To</label>
+                            <input type="date" name="targetDate" th:value="${#temporals.format(#temporals.createNow().plusDays(1), 'yyyy-MM-dd')}" required class="w-full bg-slate-900 border border-slate-600 rounded-lg p-2 text-sm text-white focus:ring-blue-500">
+                        </div>
+                    </div>
+                    <button type="submit" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-medium text-sm rounded-lg px-4 py-2 transition-colors">Clone Protocol</button>
+                </form>
+            </section>
+        </div>
+
+        <div class="lg:col-span-8 flex flex-col bg-slate-800 rounded-xl border border-slate-700 shadow-lg overflow-hidden h-full">
+
+            <div id="protocol-container" th:fragment="protocol-fragment" class="flex flex-col h-full">
+
+                <th:block th:if="${isHtmxRequest}">
+                    <div id="toast-container" hx-swap-oob="true" class="fixed bottom-6 right-6 z-50 flex flex-col gap-2">
+                        <div th:if="${toastMessage}"
+                             x-data="{ show: true }" x-init="setTimeout(() => show = false, 4000)" x-show="show"
+                             x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-2" x-transition:enter-end="opacity-100 translate-y-0"
+                             x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100 translate-y-0" x-transition:leave-end="opacity-0 translate-y-2"
+                             class="bg-emerald-600 text-white px-6 py-4 rounded-xl shadow-2xl flex items-center gap-3 border border-emerald-500">
+                            <svg class="w-5 h-5 text-emerald-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                            <span class="font-medium text-sm" th:text="${toastMessage}"></span>
+                        </div>
+                    </div>
+
+                    <div id="efficiency-metric" hx-swap-oob="true" class="bg-slate-800 px-6 py-5 rounded-xl border border-slate-700 text-center shadow-lg shrink-0">
+                        <p class="text-xs text-slate-400 uppercase tracking-wide font-semibold">Daily Efficiency</p>
+                        <p class="text-4xl font-bold text-emerald-400 mt-1" th:text="${efficiencyScore + '%'}">100.0%</p>
+                        <p class="text-xs text-slate-500 mt-1 flex items-center justify-center gap-2">
+                            <span th:text="${currentDate}">2026-03-14</span>
+                            <span th:if="${isPastDate}" class="text-[10px] font-bold text-red-500 bg-red-900/30 px-2 py-0.5 rounded uppercase tracking-wider border border-red-500/30">🔒 Locked</span>
+                        </p>
+                    </div>
+
+                    <input type="date" id="main-date-picker" hx-swap-oob="true" name="date" th:value="${currentDate}"
+                           hx-trigger="change"
+                           hx-get="/ui/protocol" hx-target="#protocol-container" hx-swap="outerHTML"
+                           class="bg-slate-800 border border-slate-600 rounded-lg p-2 text-sm text-white focus:ring-blue-500 focus:border-blue-500 shadow-sm cursor-pointer">
+                </th:block>
+
+                <div class="bg-slate-900/80 border-b border-slate-700 shrink-0">
+                    <table class="w-full text-left text-sm text-slate-300">
+                        <thead class="text-xs uppercase text-slate-500">
+                        <tr>
+                            <th class="px-6 py-4 font-semibold w-1/4">Time Window</th>
+                            <th class="px-6 py-4 font-semibold w-1/4">Category</th>
+                            <th class="px-6 py-4 font-semibold w-1/3">Focus</th>
+                            <th class="px-6 py-4 font-semibold text-right w-1/6">Status</th>
+                        </tr>
+                        </thead>
+                    </table>
+                </div>
+
+                <div class="flex-1 overflow-y-auto">
+                    <table class="w-full text-left text-sm text-slate-300">
+                        <tbody class="divide-y divide-slate-700/50">
+
+                        <tr th:if="${blocks.isEmpty()}">
+                            <td colspan="4" class="px-6 py-16 text-center text-slate-500">
+                                <p class="text-base">No protocol established for this date.</p>
+                                <p class="text-xs mt-1">Execute the Nightly Orchestration to populate.</p>
+                            </td>
+                        </tr>
+
+                        <tr th:each="block : ${blocks}" class="hover:bg-slate-700/30 transition-colors group">
+                            <td class="px-6 py-4 whitespace-nowrap font-medium text-slate-200 w-1/4">
+                                <span th:text="${#temporals.format(block.plannedStart, 'hh:mm a')}"></span>
+                                <span class="text-slate-500 mx-1">→</span>
+                                <span th:text="${#temporals.format(block.plannedEnd, 'hh:mm a')}"></span>
+                            </td>
+                            <td class="px-6 py-4 w-1/4">
+                                <span class="text-[11px] font-bold text-blue-400 uppercase tracking-wider" th:text="${block.category}"></span>
+                            </td>
+                            <td class="px-6 py-4 text-slate-300 w-1/3 truncate" th:text="${block.reason}"></td>
+
+                            <td class="px-6 py-4 w-1/6">
+                                <div class="flex justify-end items-center gap-3">
+                                    <select name="status"
+                                            th:disabled="${isPastDate}"
+                                            th:attr="hx-post=@{/ui/blocks/{id}/status(id=${block.id})}"
+                                            hx-trigger="change"
+                                            hx-target="#protocol-container"
+                                            hx-swap="outerHTML"
+                                            class="border text-[11px] font-semibold px-2 py-1 rounded shadow-sm focus:ring-blue-500 appearance-none text-center outline-none transition-colors"
+                                            th:classappend="${
                                             (isPastDate ? 'cursor-not-allowed opacity-60 ' : 'cursor-pointer ') +
                                             (block.status.name() == 'COMPLETED' ? 'text-emerald-400 border-emerald-500/50 bg-emerald-900/20' :
                                             (block.status.name() == 'WASTED' ? 'text-red-400 border-red-500/50 bg-red-900/20' :
-                                            'text-slate-300'))
+                                            (block.status.name() == 'SKIPPED' ? 'text-slate-400 border-slate-600 bg-slate-800' :
+                                            'text-blue-400 border-blue-500/50 bg-blue-900/20')))
                                         }">
-                                    <option value="PLANNED" th:selected="${block.status.name() == 'PLANNED'}">PLANNED</option>
-                                    <option value="COMPLETED" th:selected="${block.status.name() == 'COMPLETED'}">COMPLETED</option>
-                                    <option value="SKIPPED" th:selected="${block.status.name() == 'SKIPPED'}">SKIPPED</option>
-                                    <option value="WASTED" th:selected="${block.status.name() == 'WASTED'}">WASTED</option>
-                                </select>
 
-                                <button th:if="${!isPastDate}"
-                                        th:attr="hx-delete=@{/ui/blocks/{id}(id=${block.id})}"
-                                        hx-confirm="Are you sure you want to delete this time block?"
-                                        hx-target="#protocol-container"
-                                        hx-swap="outerHTML"
-                                        class="text-slate-500 hover:text-red-400 transition-colors outline-none focus:outline-none"
-                                        title="Delete Block">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
+                                        <option value="PLANNED" class="bg-slate-900 text-blue-400 font-semibold tracking-wider" th:selected="${block.status.name() == 'PLANNED'}">PLANNED</option>
+                                        <option value="COMPLETED" class="bg-slate-900 text-emerald-400 font-bold tracking-wider" th:selected="${block.status.name() == 'COMPLETED'}">COMPLETED</option>
+                                        <option value="SKIPPED" class="bg-slate-900 text-slate-400 font-semibold tracking-wider" th:selected="${block.status.name() == 'SKIPPED'}">SKIPPED</option>
+                                        <option value="WASTED" class="bg-slate-900 text-red-400 font-bold tracking-wider" th:selected="${block.status.name() == 'WASTED'}">WASTED</option>
 
-                    </tbody>
-                </table>
+                                    </select>
+
+                                    <button th:if="${!isPastDate}"
+                                            th:attr="hx-delete=@{/ui/blocks/{id}(id=${block.id})}"
+                                            hx-confirm="Are you sure you want to delete this time block?"
+                                            hx-target="#protocol-container"
+                                            hx-swap="outerHTML"
+                                            class="text-slate-500 hover:text-red-400 transition-colors outline-none focus:outline-none"
+                                            title="Delete Block">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
-</div>
-</body>
-</html>
+    </body>
+    </html>
